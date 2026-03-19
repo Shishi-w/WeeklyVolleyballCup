@@ -7,7 +7,6 @@ export default function LoginPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
-    const supabase = createClient()
     const router = useRouter()
     const searchParams = useSearchParams()
     const [callbackUrl, setCallbackUrl] = useState('/timeline')
@@ -21,6 +20,7 @@ export default function LoginPage() {
 
     const handleLogin = async () => {
         try {
+            const supabase = createClient()
             const { error } = await supabase.auth.signInWithPassword({
                 email: email.trim(),
                 password
@@ -28,7 +28,6 @@ export default function LoginPage() {
             
             if (error) throw error;
             
-            // 强制刷新当前页面的认证状态
             window.location.href = callbackUrl
         } catch (err: any) {
             console.error('登录错误:', err)
