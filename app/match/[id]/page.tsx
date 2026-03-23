@@ -558,50 +558,46 @@ export default function MatchDetailPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-            <div className="container mx-auto px-4 py-8">
-                <Link href="/timeline" className="text-blue-600 hover:underline mb-6 inline-block">
+            <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+                <Link href="/timeline" className="text-blue-600 hover:underline mb-4 sm:mb-6 inline-block text-sm sm:text-base">
                     ← 返回时间轴
                 </Link>
 
-                <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                    <div className="flex justify-between items-center mb-4">
-                        <h1 className="text-4xl font-bold text-blue-900">{match.name}</h1>
+                <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 sm:gap-0">
+                        <h1 className="text-2xl sm:text-4xl font-bold text-blue-900 break-words w-full sm:w-auto">{match.name}</h1>
                         {isCompleted && (
-                            <span className="bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">
-                                🏁 已结束
+                            <span className="bg-green-200 text-green-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
+                                ✅ 已结束 (可编辑)
                             </span>
                         )}
                     </div>
-                    <p className="text-gray-600 mb-4">{match.description}</p>
-                    <div className="flex gap-4 text-sm text-gray-500 flex-wrap">
+                    <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base line-clamp-2">{match.description}</p>
+                    <div className="flex flex-col sm:flex-row gap-2 text-xs sm:text-sm text-gray-500">
                         <span>开始：{new Date(match.start_date).toLocaleString('zh-CN')}</span>
                         <span>结束：{new Date(match.end_date).toLocaleString('zh-CN')}</span>
                     </div>
                 </div>
 
                 {/* Theme and Rules Section */}
-                <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                    <h2 className="text-2xl font-bold text-blue-900 mb-4">赛事信息与规则</h2>
-                    
+                <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
+                    <h2 className="text-lg sm:text-2xl font-bold text-blue-900 mb-4">赛事信息与规则</h2>
+
                     {/* Theme */}
-                    <div className="mb-6 pb-6 border-b">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-semibold text-blue-800">本周主题</h3>
+                    <div className="mb-6 pb-6 border-b last:border-0 last:pb-0 last:mb-0">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+                            <h3 className="text-base sm:text-xl font-semibold text-blue-800">本周主题</h3>
                             {canEdit ? (
                                 <button
                                     onClick={() => setEditingTheme(!editingTheme)}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
                                 >
                                     {editingTheme ? '取消编辑' : '编辑主题'}
                                 </button>
-                            ) : isCompleted ? (
-                                <span className="text-sm text-gray-600 bg-gray-200 px-3 py-1 rounded-full">
-                                    🏁 已结束，不可编辑
-                                </span>
                             ) : (
                                 <button
                                     onClick={handleRedirectToLogin}
-                                    className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors text-sm cursor-not-allowed"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-400 text-white text-sm sm:text-base rounded-lg hover:bg-gray-500 transition-colors w-full sm:w-auto cursor-not-allowed"
                                 >
                                     🔒 登录后可编辑
                                 </button>
@@ -613,20 +609,20 @@ export default function MatchDetailPage() {
                                 <textarea
                                     value={themeContent}
                                     onChange={(e) => setThemeContent(e.target.value)}
-                                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                                     rows={6}
                                     placeholder="请输入本周主题..."
                                 />
-                                <div className="mt-4 flex gap-2">
+                                <div className="mt-3 sm:mt-4 flex gap-2">
                                     <button
                                         onClick={handleSaveTheme}
-                                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                        className="px-4 sm:px-6 py-2 bg-green-600 text-white text-sm sm:text-base rounded-lg hover:bg-green-700 flex-1 sm:flex-none"
                                     >
                                         保存
                                     </button>
                                     <button
                                         onClick={() => setEditingTheme(false)}
-                                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                                        className="px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 text-sm sm:text-base rounded-lg hover:bg-gray-400 flex-1 sm:flex-none"
                                     >
                                         取消
                                     </button>
@@ -634,9 +630,9 @@ export default function MatchDetailPage() {
                             </div>
                         ) : (
                             <div className="prose max-w-none">
-                                <p className="text-gray-700 whitespace-pre-wrap">{theme?.content || '暂无主题内容'}</p>
+                                <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{theme?.content || '暂无主题内容'}</p>
                                 {theme && (
-                                    <p className="text-sm text-gray-500 mt-4">
+                                    <p className="text-xs text-gray-500 mt-2">
                                         最后编辑：{theme.edited_by_username} · {new Date(theme.updated_at).toLocaleString('zh-CN')}
                                     </p>
                                 )}
@@ -646,19 +642,19 @@ export default function MatchDetailPage() {
 
                     {/* Rules */}
                     <div>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-semibold text-blue-800">赛事规则</h3>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+                            <h3 className="text-base sm:text-xl font-semibold text-blue-800">赛事规则</h3>
                             {isLoggedIn ? (
                                 <button
                                     onClick={() => setEditingRule(!editingRule)}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
                                 >
                                     {editingRule ? '取消编辑' : '编辑规则'}
                                 </button>
                             ) : (
                                 <button
                                     onClick={handleRedirectToLogin}
-                                    className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors text-sm cursor-not-allowed"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-400 text-white text-sm sm:text-base rounded-lg hover:bg-gray-500 transition-colors w-full sm:w-auto cursor-not-allowed"
                                 >
                                     🔒 登录后可编辑
                                 </button>
@@ -670,20 +666,20 @@ export default function MatchDetailPage() {
                                 <textarea
                                     value={ruleContent}
                                     onChange={(e) => setRuleContent(e.target.value)}
-                                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                                     rows={8}
                                     placeholder="请输入赛事规则..."
                                 />
-                                <div className="mt-4 flex gap-2">
+                                <div className="mt-3 sm:mt-4 flex gap-2">
                                     <button
                                         onClick={handleSaveRule}
-                                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                        className="px-4 sm:px-6 py-2 bg-green-600 text-white text-sm sm:text-base rounded-lg hover:bg-green-700 flex-1 sm:flex-none"
                                     >
                                         保存
                                     </button>
                                     <button
                                         onClick={() => setEditingRule(false)}
-                                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                                        className="px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 text-sm sm:text-base rounded-lg hover:bg-gray-400 flex-1 sm:flex-none"
                                     >
                                         取消
                                     </button>
@@ -691,9 +687,9 @@ export default function MatchDetailPage() {
                             </div>
                         ) : (
                             <div className="prose max-w-none">
-                                <p className="text-gray-700 whitespace-pre-wrap">{rule?.content || '暂无规则内容'}</p>
+                                <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{rule?.content || '暂无规则内容'}</p>
                                 {rule && (
-                                    <p className="text-sm text-gray-500 mt-4">
+                                    <p className="text-xs text-gray-500 mt-2">
                                         最后编辑：{rule.edited_by_username} · {new Date(rule.updated_at).toLocaleString('zh-CN')}
                                     </p>
                                 )}
@@ -703,24 +699,20 @@ export default function MatchDetailPage() {
                 </div>
 
                 {/* Teams Section */}
-                <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-blue-900">参赛队伍</h2>
+                <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+                        <h2 className="text-lg sm:text-2xl font-bold text-blue-900">参赛队伍</h2>
                         {canEdit ? (
                             <button
                                 onClick={() => setShowAddTeam(true)}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                className="px-4 py-2 bg-green-600 text-white text-sm sm:text-base rounded-lg hover:bg-green-700 transition-colors w-full sm:w-auto flex items-center justify-center gap-2"
                             >
-                                + 添加队伍
+                                <span className="text-lg">+</span> 添加队伍
                             </button>
-                        ) : isCompleted ? (
-                            <span className="text-sm text-gray-600 bg-gray-200 px-3 py-1 rounded-full">
-                                🏁 已结束，不可添加
-                            </span>
                         ) : (
                             <button
                                 onClick={handleRedirectToLogin}
-                                className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors text-sm cursor-not-allowed"
+                                className="px-4 py-2 bg-gray-400 text-white text-sm sm:text-base rounded-lg hover:bg-gray-500 transition-colors w-full sm:w-auto cursor-not-allowed"
                             >
                                 🔒 登录后可添加
                             </button>
@@ -728,39 +720,41 @@ export default function MatchDetailPage() {
                     </div>
 
                     {teams.length === 0 ? (
-                        <p className="text-gray-600 text-center py-8">暂无参赛队伍</p>
+                        <p className="text-gray-600 text-center py-8 text-sm sm:text-base">暂无参赛队伍</p>
                     ) : (
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                             {teams.map((team) => (
-                                <div key={team.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative">
+                                <div key={team.id} className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow relative">
                                     {canEdit && (
-                                        <div className="absolute top-2 right-2 flex gap-2">
+                                        <div className="absolute top-2 right-2 flex gap-1.5 sm:gap-2">
                                             <button
                                                 onClick={() => {
                                                     console.log('点击编辑队伍:', team);
                                                     setEditingTeam(team);
                                                 }}
-                                                className="text-blue-500 hover:text-blue-700 text-sm font-medium"
+                                                className="text-blue-500 hover:text-blue-700 text-lg sm:text-base font-medium p-1"
+                                                title="编辑队伍"
                                             >
                                                 ✏️
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteTeam(team.id)}
-                                                className="text-red-500 hover:text-red-700 text-sm font-medium"
+                                                className="text-red-500 hover:text-red-700 text-lg sm:text-base font-medium p-1"
+                                                title="删除队伍"
                                             >
                                                 🗑️
                                             </button>
                                         </div>
                                     )}
-                                    <h3 className="text-xl font-bold text-blue-900 mb-3">{team.team_name}</h3>
-                                    <div className="space-y-2 text-sm">
+                                    <h3 className="text-lg sm:text-xl font-bold text-blue-900 mb-2 sm:mb-3 pr-16 break-words">{team.team_name}</h3>
+                                    <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                                         <p><span className="font-medium text-gray-600">队长：</span>{team.captain_name}</p>
                                         {team.players && team.players.length > 0 && (
-                                            <div className="mt-3 pt-3 border-t">
-                                                <p className="font-medium text-gray-600 mb-2">队员 ({team.players.length}):</p>
+                                            <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t">
+                                                <p className="font-medium text-gray-600 mb-1.5 sm:mb-2 text-xs sm:text-sm">队员 ({team.players.length}):</p>
                                                 <ul className="space-y-1">
                                                     {team.players.map((player, idx) => (
-                                                        <li key={idx} className="text-gray-700">
+                                                        <li key={idx} className="text-gray-700 text-xs sm:text-sm truncate">
                                                             • {player.name}
                                                         </li>
                                                     ))}
@@ -798,24 +792,24 @@ export default function MatchDetailPage() {
                 )}
 
                 {/* Results and Records Section */}
-                <div className="bg-white rounded-lg shadow-md p-6 mt-8">
-                    <h2 className="text-2xl font-bold text-blue-900 mb-6">赛事结果与记录</h2>
+                <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mt-6 sm:mt-8">
+                    <h2 className="text-lg sm:text-2xl font-bold text-blue-900 mb-4 sm:mb-6">赛事结果与记录</h2>
 
                     {/* Results */}
-                    <div className="mb-8 pb-8 border-b">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-semibold text-blue-800">赛事结果公示</h3>
+                    <div className="mb-6 sm:mb-8 pb-6 sm:pb-8 border-b last:border-0 last:pb-0 last:mb-0">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+                            <h3 className="text-base sm:text-xl font-semibold text-blue-800">赛事结果公示</h3>
                             {isLoggedIn ? (
                                 <button
                                     onClick={() => setEditingResult(!editingResult)}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
                                 >
                                     {editingResult ? '取消编辑' : '编辑结果'}
                                 </button>
                             ) : (
                                 <button
                                     onClick={handleRedirectToLogin}
-                                    className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors text-sm cursor-not-allowed"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-400 text-white text-sm sm:text-base rounded-lg hover:bg-gray-500 transition-colors w-full sm:w-auto cursor-not-allowed"
                                 >
                                     🔒 登录后可编辑
                                 </button>
@@ -827,20 +821,20 @@ export default function MatchDetailPage() {
                                 <textarea
                                     value={resultContent}
                                     onChange={(e) => setResultContent(e.target.value)}
-                                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                                     rows={8}
                                     placeholder="请输入赛事结果..."
                                 />
-                                <div className="mt-4 flex gap-2">
+                                <div className="mt-3 sm:mt-4 flex gap-2">
                                     <button
                                         onClick={handleSaveResult}
-                                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                        className="px-4 sm:px-6 py-2 bg-green-600 text-white text-sm sm:text-base rounded-lg hover:bg-green-700 flex-1 sm:flex-none"
                                     >
                                         保存
                                     </button>
                                     <button
                                         onClick={() => setEditingResult(false)}
-                                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                                        className="px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 text-sm sm:text-base rounded-lg hover:bg-gray-400 flex-1 sm:flex-none"
                                     >
                                         取消
                                     </button>
@@ -848,9 +842,9 @@ export default function MatchDetailPage() {
                             </div>
                         ) : (
                             <div className="prose max-w-none">
-                                <p className="text-gray-700 whitespace-pre-wrap">{result?.content || '暂无结果公示'}</p>
+                                <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{result?.content || '暂无结果公示'}</p>
                                 {result && (
-                                    <p className="text-sm text-gray-500 mt-4">
+                                    <p className="text-xs text-gray-500 mt-2">
                                         最后编辑：{result.edited_by_username} · {new Date(result.updated_at).toLocaleString('zh-CN')}
                                     </p>
                                 )}
@@ -860,21 +854,21 @@ export default function MatchDetailPage() {
 
                     {/* Records */}
                     <div>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-semibold text-blue-800">赛事图文记录</h3>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+                            <h3 className="text-base sm:text-xl font-semibold text-blue-800">赛事图文记录</h3>
                         </div>
 
                         {isLoggedIn && (
-                            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                                <div className="flex gap-2 items-center">
+                            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                                <div className="flex flex-col sm:flex-row gap-2">
                                     <input
                                         type="text"
                                         value={newRecordCaption}
                                         onChange={(e) => setNewRecordCaption(e.target.value)}
-                                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                                         placeholder="图片说明（可选）"
                                     />
-                                    <label className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
+                                    <label className="px-3 sm:px-4 py-2 bg-blue-600 text-white text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-center">
                                         {uploadingImage ? '上传中...' : '上传图片'}
                                         <input
                                             type="file"
@@ -889,10 +883,10 @@ export default function MatchDetailPage() {
                         )}
 
                         {!isLoggedIn && (
-                            <div className="mb-6 text-center">
+                            <div className="mb-4 sm:mb-6 text-center">
                                 <button
                                     onClick={handleRedirectToLogin}
-                                    className="px-6 py-3 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors cursor-not-allowed"
+                                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-400 text-white text-sm sm:text-base rounded-lg hover:bg-gray-500 transition-colors cursor-not-allowed w-full sm:w-auto"
                                 >
                                     📷 登录即可上传赛事照片
                                 </button>
@@ -900,72 +894,91 @@ export default function MatchDetailPage() {
                         )}
 
                         {records.length === 0 ? (
-                            <p className="text-gray-600 text-center py-8">暂无图文记录</p>
+                            <p className="text-gray-600 text-center py-8 text-sm sm:text-base">暂无图文记录</p>
                         ) : (
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                 {records.map((record) => (
                                     <div key={record.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow relative group">
                                         {isLoggedIn && (
                                             <>
                                                 <button
                                                     onClick={() => setEditingRecord(record)}
-                                                    className="absolute top-2 left-2 bg-white/90 text-blue-500 hover:text-blue-700 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    className="absolute top-2 left-2 bg-white/90 text-blue-500 hover:text-blue-700 p-1.5 sm:p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                                     title="编辑说明"
                                                 >
                                                     ✏️
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteRecord(record.id)}
-                                                    className="absolute top-2 right-2 bg-white/90 text-red-500 hover:text-red-700 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    className="absolute top-2 right-2 bg-white/90 text-red-500 hover:text-red-700 p-1.5 sm:p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                                     title="删除记录"
                                                 >
                                                     🗑️
                                                 </button>
                                             </>
                                         )}
-                                        <img 
-                                            src={record.image_url} 
+                                        <img
+                                            src={record.image_url}
                                             alt={record.caption || '赛事记录'}
-                                            className="w-full h-48 object-cover"
+                                            className="w-full h-40 sm:h-48 object-cover"
                                         />
                                         {record.caption && (
-                                            <div className="p-3">
-                                                <p className="text-gray-700 text-sm">{record.caption}</p>
-                                                <p className="text-xs text-gray-500 mt-2">
+                                            <div className="p-2 sm:p-3">
+                                                <p className="text-gray-700 text-xs sm:text-sm leading-relaxed">{record.caption}</p>
+                                                <p className="text-xs text-gray-500 mt-1.5 sm:mt-2">
                                                     {record.edited_by_username} · {new Date(record.updated_at).toLocaleString('zh-CN')}
                                                 </p>
                                             </div>
                                         )}
-                                        <div className="px-3 pb-3">
+                                        {!record.caption && isLoggedIn && (
+                                            <div className="p-2 sm:p-3">
+                                                <button
+                                                    onClick={() => setEditingRecord(record)}
+                                                    className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium"
+                                                >
+                                                    📝 添加说明
+                                                </button>
+                                            </div>
+                                        )}
+                                        <div className="px-2 sm:px-3 pb-2 sm:pb-3">
                                             <button
                                                 onClick={() => setViewingComments(viewingComments === record.id ? null : record.id)}
-                                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                                className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium w-full text-left"
                                             >
                                                 💬 {record.comments?.length || 0} 条评论
                                             </button>
                                         </div>
 
                                         {viewingComments === record.id && (
-                                            <div className="px-3 pb-3 border-t pt-3 bg-gray-50">
-                                                <div className="max-h-40 overflow-y-auto mb-2 space-y-1">
-                                                    {record.comments?.map((comment, idx) => (
-                                                        <p key={idx} className="text-sm text-gray-700 bg-white p-2 rounded">
-                                                            {comment}
-                                                        </p>
-                                                    )) || <p className="text-sm text-gray-500">暂无评论</p>}
+                                            <div className="px-2 sm:px-3 pb-2 sm:pb-3 border-t pt-2 sm:pt-3 bg-gray-50">
+                                                <div className="max-h-32 sm:max-h-40 overflow-y-auto mb-2 space-y-1">
+                                                    {record.comments && Array.isArray(record.comments) && record.comments.length > 0 ? (
+                                                        record.comments.map((comment, idx) => (
+                                                            <p key={idx} className="text-xs sm:text-sm text-gray-700 bg-white p-1.5 sm:p-2 rounded break-words">
+                                                                {comment}
+                                                            </p>
+                                                        ))
+                                                    ) : (
+                                                        <p className="text-xs sm:text-sm text-gray-500">暂无评论</p>
+                                                    )}
                                                 </div>
                                                 {isLoggedIn && (
-                                                    <div className="flex gap-2">
+                                                    <div className="flex gap-1.5 sm:gap-2">
                                                         <input
                                                             type="text"
                                                             value={newComment}
                                                             onChange={(e) => setNewComment(e.target.value)}
-                                                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                                            onKeyPress={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    handleAddComment(record.id);
+                                                                }
+                                                            }}
+                                                            className="flex-1 px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
                                                             placeholder="写下你的评论..."
                                                         />
                                                         <button
                                                             onClick={() => handleAddComment(record.id)}
-                                                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                                            className="px-2 sm:px-3 py-1 bg-blue-600 text-white text-xs sm:text-sm rounded hover:bg-blue-700 whitespace-nowrap"
                                                         >
                                                             发送
                                                         </button>
@@ -979,6 +992,7 @@ export default function MatchDetailPage() {
                         )}
                     </div>
                 </div>
+
             </div>
         </div>
     );
