@@ -41,6 +41,7 @@ type Record = {
     caption: string;
     edited_by_username: string | null;
     updated_at: string;
+    comments?: string[];
 };
 
 type Team = {
@@ -75,6 +76,10 @@ export default function MatchDetailPage() {
     const [userId, setUserId] = useState<string | null>(null);
     const [uploadingImage, setUploadingImage] = useState(false);
     const [newRecordCaption, setNewRecordCaption] = useState('');
+    const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+    const [editingRecord, setEditingRecord] = useState<Record | null>(null);
+    const [viewingComments, setViewingComments] = useState<string | null>(null);
+    const [newComment, setNewComment] = useState('');
 
     useEffect(() => {
         checkAuth();
@@ -396,32 +401,132 @@ export default function MatchDetailPage() {
     };
 
     const handleDeleteTeam = async (teamId: string) => {
-        if (!canEdit) {
+
+    if (!canEdit) {
+        if (!isLoggedIn) {
+            handleRedirectToLogin();
+            return;
+        }
+        alert(match?.status === 'completed' ? '已结束的赛事不能删除队伍' : '请先登录后再删除队伍');
+        return;
+    }
+
+    if (!confirm('确定要删除这支队伍吗？')) return;
+
+    try {
+        const { error } = await supabase
+            .from('teams')
+            .delete()
+            .eq('id', teamId);
+
+        if (error) throw error;
+
+        fetchData();
+        alert('队伍已删除');
+    } catch (error) {
+        console.error('删除队伍失败:', error);
+        alert('删除失败，请重试');
+    }
+     };
+
+    const handleEditTeam = async (teamData: any) => {
+        if (!editingTeam || !canEdit) {
             if (!isLoggedIn) {
                 handleRedirectToLogin();
                 return;
             }
-            alert(match?.status === 'completed' ? '已结束的赛事不能删除队伍' : '请先登录后再删除队伍');
+            alert(match?.status === 'completed' ? '已结束的赛事不能编辑队伍' : '请先登录后再编辑队伍');
             return;
         }
-
-        if (!confirm('确定要删除这支队伍吗？')) return;
 
         try {
             const { error } = await supabase
                 .from('teams')
-                .delete()
-                .eq('id', teamId);
+                .update({
+                    team_name: teamData.team_name,
+                    captain_name: teamData.captain_name,
+                    players: teamData.players,
+                })
+                .eq('id', editingTeam.id);
 
             if (error) throw error;
 
+            setEditingTeam(null);
             fetchData();
-            alert('队伍已删除');
+            alert('队伍信息已更新');
         } catch (error) {
-            console.error('删除队伍失败:', error);
-            alert('删除失败，请重试');
+            console.error('编辑队伍失败:', error);
+            alert('更新失败，请重试');
         }
     };
+
+    const handleEditRecordCaption = async (recordId: string, newCaption: string) => {
+        if (!isLoggedIn) {
+            handleRedirectToLogin();
+            return;
+        }
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            const { error } = await supabase
+                .from('match_records')
+                .update({
+                    caption: newCaption,
+                    edited_by: user?.email || 'Anonymous',
+                    edited_by_username: user?.user_metadata?.username || '匿名用户',
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', recordId);
+
+            if (error) throw error;
+
+            setEditingRecord(null);
+            fetchData();
+            alert('说明文字已更新');
+        } catch (error) {
+            console.error('更新说明失败:', error);
+            alert('更新失败，请重试');
+        }
+    };
+
+    const handleAddComment = async (recordId: string) => {
+        if (!isLoggedIn) {
+            handleRedirectToLogin();
+            return;
+        }
+
+        if (!newComment.trim()) {
+            alert('请输入评论内容');
+            return;
+        }
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const record = records.find(r => r.id === recordId);
+            const currentComments = record?.comments || [];
+            const commentWithAuthor = `${user?.user_metadata?.username || '匿名用户'}: ${newComment}`;
+
+            const { error } = await supabase
+                .from('match_records')
+                .update({
+                    comments: [...currentComments, commentWithAuthor],
+                })
+                .eq('id', recordId);
+
+            if (error) throw error;
+
+            setNewComment('');
+            fetchData();
+            alert('评论已添加');
+        } catch (error) {
+            console.error('添加评论失败:', error);
+            alert('添加失败，请重试');
+        }
+    };
+
+
+
 
     if (loading) {
         return (
@@ -433,6 +538,8 @@ export default function MatchDetailPage() {
             </div>
         );
     }
+
+
 
     if (!match) {
         return (
@@ -627,13 +734,23 @@ export default function MatchDetailPage() {
                             {teams.map((team) => (
                                 <div key={team.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative">
                                     {canEdit && (
-                                        <button
-                                            onClick={() => handleDeleteTeam(team.id)}
-                                            className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-sm font-medium"
-                                            title="删除队伍"
-                                        >
-                                            🗑️
-                                        </button>
+                                        <div className="absolute top-2 right-2 flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    console.log('点击编辑队伍:', team);
+                                                    setEditingTeam(team);
+                                                }}
+                                                className="text-blue-500 hover:text-blue-700 text-sm font-medium"
+                                            >
+                                                ✏️
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteTeam(team.id)}
+                                                className="text-red-500 hover:text-red-700 text-sm font-medium"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
                                     )}
                                     <h3 className="text-xl font-bold text-blue-900 mb-3">{team.team_name}</h3>
                                     <div className="space-y-2 text-sm">
@@ -662,6 +779,21 @@ export default function MatchDetailPage() {
                     <AddTeamModal
                         onClose={() => setShowAddTeam(false)}
                         onAdd={handleAddTeam}
+                    />
+                )}
+
+                {editingTeam && canEdit && (
+                    <EditTeamModal
+                        team={editingTeam}
+                        onClose={() => setEditingTeam(null)}
+                        onEdit={handleEditTeam}
+                    />
+                )}
+                {editingRecord && isLoggedIn && (
+                    <EditRecordCaptionModal
+                        record={editingRecord}
+                        onClose={() => setEditingRecord(null)}
+                        onEdit={handleEditRecordCaption}
                     />
                 )}
 
@@ -774,13 +906,22 @@ export default function MatchDetailPage() {
                                 {records.map((record) => (
                                     <div key={record.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow relative group">
                                         {isLoggedIn && (
-                                            <button
-                                                onClick={() => handleDeleteRecord(record.id)}
-                                                className="absolute top-2 right-2 bg-white/90 text-red-500 hover:text-red-700 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                title="删除记录"
-                                            >
-                                                🗑️
-                                            </button>
+                                            <>
+                                                <button
+                                                    onClick={() => setEditingRecord(record)}
+                                                    className="absolute top-2 left-2 bg-white/90 text-blue-500 hover:text-blue-700 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    title="编辑说明"
+                                                >
+                                                    ✏️
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteRecord(record.id)}
+                                                    className="absolute top-2 right-2 bg-white/90 text-red-500 hover:text-red-700 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    title="删除记录"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </>
                                         )}
                                         <img 
                                             src={record.image_url} 
@@ -793,6 +934,43 @@ export default function MatchDetailPage() {
                                                 <p className="text-xs text-gray-500 mt-2">
                                                     {record.edited_by_username} · {new Date(record.updated_at).toLocaleString('zh-CN')}
                                                 </p>
+                                            </div>
+                                        )}
+                                        <div className="px-3 pb-3">
+                                            <button
+                                                onClick={() => setViewingComments(viewingComments === record.id ? null : record.id)}
+                                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                            >
+                                                💬 {record.comments?.length || 0} 条评论
+                                            </button>
+                                        </div>
+
+                                        {viewingComments === record.id && (
+                                            <div className="px-3 pb-3 border-t pt-3 bg-gray-50">
+                                                <div className="max-h-40 overflow-y-auto mb-2 space-y-1">
+                                                    {record.comments?.map((comment, idx) => (
+                                                        <p key={idx} className="text-sm text-gray-700 bg-white p-2 rounded">
+                                                            {comment}
+                                                        </p>
+                                                    )) || <p className="text-sm text-gray-500">暂无评论</p>}
+                                                </div>
+                                                {isLoggedIn && (
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={newComment}
+                                                            onChange={(e) => setNewComment(e.target.value)}
+                                                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                                            placeholder="写下你的评论..."
+                                                        />
+                                                        <button
+                                                            onClick={() => handleAddComment(record.id)}
+                                                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                                        >
+                                                            发送
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -923,3 +1101,171 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
         </div>
     );
 }
+
+function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => void; onEdit: (data: any) => void }) {
+    const [teamName, setTeamName] = useState(team.team_name);
+    const [captainName, setCaptainName] = useState(team.captain_name);
+    const [players, setPlayers] = useState<any[]>(team.players || []);
+    const [newPlayerName, setNewPlayerName] = useState('');
+
+    const handleAddPlayer = () => {
+        if (!newPlayerName.trim()) return;
+        setPlayers([...players, { name: newPlayerName }]);
+        setNewPlayerName('');
+    };
+
+    const handleRemovePlayer = (index: number) => {
+        setPlayers(players.filter((_, i) => i !== index));
+    };
+
+    const handleSubmit = () => {
+        if (!teamName || !captainName) {
+            alert('请填写队名和队长姓名');
+            return;
+        }
+
+        onEdit({
+            team_name: teamName,
+            captain_name: captainName,
+            players: players,
+        });
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleAddPlayer();
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+                <h2 className="text-2xl font-bold text-blue-900 mb-4">编辑队伍信息</h2>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">队名 *</label>
+                        <input
+                            type="text"
+                            value={teamName}
+                            onChange={(e) => setTeamName(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="请输入队名"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">队长姓名 *</label>
+                        <input
+                            type="text"
+                            value={captainName}
+                            onChange={(e) => setCaptainName(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="请输入队长姓名"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">队员列表</label>
+                        <div className="flex gap-2 mb-2">
+                            <input
+                                type="text"
+                                value={newPlayerName}
+                                onChange={(e) => setNewPlayerName(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="队员姓名"
+                            />
+                            <button
+                                onClick={handleAddPlayer}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                添加
+                            </button>
+                        </div>
+                        {players.length > 0 && (
+                            <ul className="border border-gray-200 rounded-lg divide-y max-h-40 overflow-y-auto">
+                                {players.map((player, idx) => (
+                                    <li key={idx} className="px-4 py-2 flex justify-between items-center">
+                                        <span className="text-gray-700">{player.name}</span>
+                                        <button
+                                            onClick={() => handleRemovePlayer(idx)}
+                                            className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                        >
+                                            删除
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+
+                <div className="mt-6 flex gap-2 justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                    >
+                        取消
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                        保存修改
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+
+
+    function EditRecordCaptionModal({ record, onClose, onEdit }: { record: Record; onClose: () => void; onEdit: (id: string, caption: string) => void }) {
+        const [caption, setCaption] = useState(record.caption);
+
+        const handleSubmit = () => {
+            onEdit(record.id, caption);
+        };
+
+        return (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl">
+                    <h2 className="text-2xl font-bold text-blue-900 mb-4">编辑图片说明</h2>
+
+                    <div className="mb-4">
+                        <img
+                            src={record.image_url}
+                            alt={caption || '图片预览'}
+                            className="w-full h-64 object-cover rounded-lg mb-4"
+                        />
+                        <label className="block text-sm font-medium text-gray-700 mb-2">说明文字</label>
+                        <textarea
+                            value={caption}
+                            onChange={(e) => setCaption(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            rows={4}
+                            placeholder="请输入图片说明..."
+                        />
+                    </div>
+
+                    <div className="flex gap-2 justify-end">
+                        <button
+                            onClick={onClose}
+                            className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                        >
+                            取消
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                            保存
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
