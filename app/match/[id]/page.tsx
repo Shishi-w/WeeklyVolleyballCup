@@ -81,10 +81,88 @@ export default function MatchDetailPage() {
     const [viewingComments, setViewingComments] = useState<string | null>(null);
     const [newComment, setNewComment] = useState('');
 
+    const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+
     useEffect(() => {
         checkAuth();
         fetchData();
     }, [matchId]);
+
+
+    const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!isLoggedIn) {
+            handleRedirectToLogin();
+            return;
+        }
+
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const validFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+
+        if (validFiles.length === 0) {
+            alert('请选择有效的图片文件');
+            return;
+        }
+
+        setUploadingImage(true);
+        setUploadProgress({ current: 0, total: validFiles.length });
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            let successCount = 0;
+
+            for (let i = 0; i < validFiles.length; i++) {
+                const file = validFiles[i];
+                if (!file) continue;
+
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${matchId}-${Date.now()}-${i}.${fileExt}`;
+
+                try {
+                    const { error: uploadError } = await supabase.storage
+                        .from('match-images')
+                        .upload(fileName, file);
+
+                    if (uploadError) throw uploadError;
+
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('match-images')
+                        .getPublicUrl(fileName);
+
+                    const recordData = {
+                        match_id: matchId,
+                        image_url: publicUrl,
+                        caption: newRecordCaption || '',
+                        edited_by: user?.email || 'Anonymous',
+                        edited_by_username: user?.user_metadata?.username || '匿名用户',
+                    };
+
+                    const { error: insertError } = await supabase
+                        .from('match_records')
+                        .insert([recordData]);
+
+                    if (insertError) throw insertError;
+
+                    successCount++;
+                    setUploadProgress({ current: i + 1, total: validFiles.length });
+                } catch (error) {
+                    console.error(`上传第 ${i + 1} 张图片失败:`, error);
+                }
+            }
+
+            setNewRecordCaption('');
+            setUploadProgress(null);
+            fetchData();
+            alert(`成功上传 ${successCount}/${validFiles.length} 张图片`);
+        } catch (error) {
+            console.error('批量上传图片失败:', error);
+            alert('上传失败，请重试');
+        } finally {
+            setUploadingImage(false);
+            setUploadProgress(null);
+        }
+    };
 
     const checkAuth = async () => {
         try {
@@ -289,61 +367,7 @@ export default function MatchDetailPage() {
         }
     };
 
-    const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!isLoggedIn) {
-            handleRedirectToLogin();
-            return;
-        }
 
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        if (!file.type.startsWith('image/')) {
-            alert('请上传图片文件');
-            return;
-        }
-
-        setUploadingImage(true);
-
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${matchId}-${Date.now()}.${fileExt}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('match-images')
-                .upload(fileName, file);
-
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('match-images')
-                .getPublicUrl(fileName);
-
-            const recordData = {
-                match_id: matchId,
-                image_url: publicUrl,
-                caption: newRecordCaption || '',
-                edited_by: user?.email || 'Anonymous',
-                edited_by_username: user?.user_metadata?.username || '匿名用户',
-            };
-
-            const { error: insertError } = await supabase
-                .from('match_records')
-                .insert([recordData]);
-
-            if (insertError) throw insertError;
-
-            setNewRecordCaption('');
-            fetchData();
-            alert('图片已上传');
-        } catch (error) {
-            console.error('上传图片失败:', error);
-            alert('上传失败，请重试');
-        } finally {
-            setUploadingImage(false);
-        }
-    };
 
     const handleDeleteRecord = async (recordId: string) => {
         if (!isLoggedIn) {
@@ -878,6 +902,48 @@ export default function MatchDetailPage() {
                                             className="hidden"
                                         />
                                     </label>
+                                </div>
+                            </div>
+                        )}
+
+                        {isLoggedIn && (
+                            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                                <div className="flex flex-col gap-3">
+                                    {uploadProgress && (
+                                        <div className="w-full">
+                                            <div className="flex justify-between text-xs sm:text-sm text-gray-600 mb-1">
+                                                <span>上传进度</span>
+                                                <span>{uploadProgress.current} / {uploadProgress.total}</span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                                <div
+                                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                                    style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <input
+                                            type="text"
+                                            value={newRecordCaption}
+                                            onChange={(e) => setNewRecordCaption(e.target.value)}
+                                            className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                                            placeholder="图片说明（可选，应用于所有图片）"
+                                        />
+                                        <label className={`px-3 sm:px-4 py-2 bg-blue-600 text-white text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-center ${uploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                            {uploadingImage ? '上传中...' : '📷 批量上传图片'}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={handleUploadImage}
+                                                disabled={uploadingImage}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    </div>
+                                    <p className="text-xs text-gray-500">💡 提示：支持同时选择多张图片进行上传</p>
                                 </div>
                             </div>
                         )}
