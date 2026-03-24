@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -31,12 +32,23 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!username || username.trim() === '') {
+      setError('请输入用户名');
+      setLoading(false);
+      return;
+    }
+
     try {
       const supabase = createClient();
       
       const { error, data } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            username: username.trim(),
+          },
+        },
       });
 
       if (error) {
@@ -80,6 +92,21 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              用户名
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="w-full px-4 py-3 border-2 border-pink-100 rounded-xl focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all outline-none"
+              placeholder="请输入用户名（球友们会看到这个名字）"
+            />
+          </div>
+
+          <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               邮箱
             </label>
@@ -90,7 +117,7 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-3 border-2 border-pink-100 rounded-xl focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all outline-none"
-              placeholder="请输入邮箱地址"
+              placeholder="请输入邮箱地址（用于登录）"
             />
           </div>
 
