@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/browser';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import { getOptimizedImageUrl, getBlurPlaceholder } from '@/lib/imageUtils';
+import { VolleyballIcon, LoadingIcon, FlowerIcon } from '@/components/Icons';
 
 type Match = {
     id: string;
@@ -554,9 +557,9 @@ export default function MatchDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-50 via-teal-50 to-blue-50">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <LoadingIcon className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-cyan-500" />
                     <p className="text-gray-600">加载中...</p>
                 </div>
             </div>
@@ -565,12 +568,13 @@ export default function MatchDetailPage() {
 
 
 
+
     if (!match) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-50 via-teal-50 to-blue-50">
                 <div className="text-center">
                     <p className="text-gray-600">赛事不存在</p>
-                    <Link href="/timeline" className="text-blue-600 hover:underline mt-4 block">
+                    <Link href="/timeline" className="text-cyan-600 hover:text-cyan-700 hover:underline mt-4 block font-medium">
                         返回时间轴
                     </Link>
                 </div>
@@ -578,25 +582,32 @@ export default function MatchDetailPage() {
         );
     }
 
+
+
+
     const isCompleted = match.status === 'completed';
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-            <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-                <Link href="/timeline" className="text-blue-600 hover:underline mb-4 sm:mb-6 inline-block text-sm sm:text-base">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-teal-50 to-blue-50 relative overflow-hidden">
+            {/* 装饰背景 */}
+            <div className="fixed top-20 right-10 w-32 h-32 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
+            <div className="fixed bottom-20 left-10 w-32 h-32 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{ animationDelay: '1.5s' }}></div>
+
+            <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 relative z-10">
+                <Link href="/timeline" className="text-cyan-600 hover:text-cyan-700 hover:underline mb-4 sm:mb-6 inline-block text-sm sm:text-base font-medium">
                     ← 返回时间轴
                 </Link>
 
-                <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft-lg p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-cyan-100">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 sm:gap-0">
-                        <h1 className="text-2xl sm:text-4xl font-bold text-blue-900 break-words w-full sm:w-auto">{match.name}</h1>
+                        <h1 className="text-2xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700 break-words w-full sm:w-auto">{match.name}</h1>
                         {isCompleted && (
-                            <span className="bg-green-200 text-green-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
+                            <span className="bg-teal-100 text-teal-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap border-2 border-teal-200">
                                 ✅ 已结束 (可编辑)
                             </span>
                         )}
                     </div>
-                    <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base line-clamp-2">{match.description}</p>
+                    <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base line-clamp-2 leading-relaxed">{match.description}</p>
                     <div className="flex flex-col sm:flex-row gap-2 text-xs sm:text-sm text-gray-500">
                         <span>开始：{new Date(match.start_date).toLocaleString('zh-CN')}</span>
                         <span>结束：{new Date(match.end_date).toLocaleString('zh-CN')}</span>
@@ -604,24 +615,24 @@ export default function MatchDetailPage() {
                 </div>
 
                 {/* Theme and Rules Section */}
-                <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
-                    <h2 className="text-lg sm:text-2xl font-bold text-blue-900 mb-4">赛事信息与规则</h2>
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft-lg p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-cyan-100">
+                    <h2 className="text-lg sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700 mb-4">赛事信息与规则</h2>
 
                     {/* Theme */}
-                    <div className="mb-6 pb-6 border-b last:border-0 last:pb-0 last:mb-0">
+                    <div className="mb-6 pb-6 border-b border-cyan-100 last:border-0 last:pb-0 last:mb-0">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
-                            <h3 className="text-base sm:text-xl font-semibold text-blue-800">本周主题</h3>
+                            <h3 className="text-base sm:text-xl font-semibold text-cyan-800">本周主题</h3>
                             {canEdit ? (
                                 <button
                                     onClick={() => setEditingTheme(!editingTheme)}
-                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto"
                                 >
                                     {editingTheme ? '取消编辑' : '编辑主题'}
                                 </button>
                             ) : (
                                 <button
                                     onClick={handleRedirectToLogin}
-                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-400 text-white text-sm sm:text-base rounded-lg hover:bg-gray-500 transition-colors w-full sm:w-auto cursor-not-allowed"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors w-full sm:w-auto cursor-not-allowed"
                                 >
                                     🔒 登录后可编辑
                                 </button>
@@ -633,20 +644,20 @@ export default function MatchDetailPage() {
                                 <textarea
                                     value={themeContent}
                                     onChange={(e) => setThemeContent(e.target.value)}
-                                    className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                                    className="w-full p-3 sm:p-4 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-sm sm:text-base outline-none transition-all"
                                     rows={6}
                                     placeholder="请输入本周主题..."
                                 />
                                 <div className="mt-3 sm:mt-4 flex gap-2">
                                     <button
                                         onClick={handleSaveTheme}
-                                        className="px-4 sm:px-6 py-2 bg-green-600 text-white text-sm sm:text-base rounded-lg hover:bg-green-700 flex-1 sm:flex-none"
+                                        className="px-4 sm:px-6 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 flex-1 sm:flex-none"
                                     >
                                         保存
                                     </button>
                                     <button
                                         onClick={() => setEditingTheme(false)}
-                                        className="px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 text-sm sm:text-base rounded-lg hover:bg-gray-400 flex-1 sm:flex-none"
+                                        className="px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors flex-1 sm:flex-none"
                                     >
                                         取消
                                     </button>
@@ -667,18 +678,18 @@ export default function MatchDetailPage() {
                     {/* Rules */}
                     <div>
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
-                            <h3 className="text-base sm:text-xl font-semibold text-blue-800">赛事规则</h3>
+                            <h3 className="text-base sm:text-xl font-semibold text-cyan-800">赛事规则</h3>
                             {isLoggedIn ? (
                                 <button
                                     onClick={() => setEditingRule(!editingRule)}
-                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto"
                                 >
                                     {editingRule ? '取消编辑' : '编辑规则'}
                                 </button>
                             ) : (
                                 <button
                                     onClick={handleRedirectToLogin}
-                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-400 text-white text-sm sm:text-base rounded-lg hover:bg-gray-500 transition-colors w-full sm:w-auto cursor-not-allowed"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors w-full sm:w-auto cursor-not-allowed"
                                 >
                                     🔒 登录后可编辑
                                 </button>
@@ -690,20 +701,20 @@ export default function MatchDetailPage() {
                                 <textarea
                                     value={ruleContent}
                                     onChange={(e) => setRuleContent(e.target.value)}
-                                    className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                                    className="w-full p-3 sm:p-4 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-sm sm:text-base outline-none transition-all"
                                     rows={8}
                                     placeholder="请输入赛事规则..."
                                 />
                                 <div className="mt-3 sm:mt-4 flex gap-2">
                                     <button
                                         onClick={handleSaveRule}
-                                        className="px-4 sm:px-6 py-2 bg-green-600 text-white text-sm sm:text-base rounded-lg hover:bg-green-700 flex-1 sm:flex-none"
+                                        className="px-4 sm:px-6 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 flex-1 sm:flex-none"
                                     >
                                         保存
                                     </button>
                                     <button
                                         onClick={() => setEditingRule(false)}
-                                        className="px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 text-sm sm:text-base rounded-lg hover:bg-gray-400 flex-1 sm:flex-none"
+                                        className="px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors flex-1 sm:flex-none"
                                     >
                                         取消
                                     </button>
@@ -723,20 +734,20 @@ export default function MatchDetailPage() {
                 </div>
 
                 {/* Teams Section */}
-                <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft-lg p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-cyan-100">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
-                        <h2 className="text-lg sm:text-2xl font-bold text-blue-900">参赛队伍</h2>
+                        <h2 className="text-lg sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700">参赛队伍</h2>
                         {canEdit ? (
                             <button
                                 onClick={() => setShowAddTeam(true)}
-                                className="px-4 py-2 bg-green-600 text-white text-sm sm:text-base rounded-lg hover:bg-green-700 transition-colors w-full sm:w-auto flex items-center justify-center gap-2"
+                                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto flex items-center justify-center gap-2"
                             >
                                 <span className="text-lg">+</span> 添加队伍
                             </button>
                         ) : (
                             <button
                                 onClick={handleRedirectToLogin}
-                                className="px-4 py-2 bg-gray-400 text-white text-sm sm:text-base rounded-lg hover:bg-gray-500 transition-colors w-full sm:w-auto cursor-not-allowed"
+                                className="px-4 py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors w-full sm:w-auto cursor-not-allowed"
                             >
                                 🔒 登录后可添加
                             </button>
@@ -748,7 +759,7 @@ export default function MatchDetailPage() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                             {teams.map((team) => (
-                                <div key={team.id} className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow relative">
+                                <div key={team.id} className="border-2 border-cyan-100 rounded-xl p-3 sm:p-4 hover:shadow-soft hover:-translate-y-1 transition-all duration-300 relative bg-white/50">
                                     {canEdit && (
                                         <div className="absolute top-2 right-2 flex gap-1.5 sm:gap-2">
                                             <button
@@ -756,25 +767,25 @@ export default function MatchDetailPage() {
                                                     console.log('点击编辑队伍:', team);
                                                     setEditingTeam(team);
                                                 }}
-                                                className="text-blue-500 hover:text-blue-700 text-lg sm:text-base font-medium p-1"
+                                                className="text-cyan-500 hover:text-cyan-700 text-lg sm:text-base font-medium p-1 bg-white rounded-full shadow"
                                                 title="编辑队伍"
                                             >
                                                 ✏️
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteTeam(team.id)}
-                                                className="text-red-500 hover:text-red-700 text-lg sm:text-base font-medium p-1"
+                                                className="text-red-500 hover:text-red-700 text-lg sm:text-base font-medium p-1 bg-white rounded-full shadow"
                                                 title="删除队伍"
                                             >
                                                 🗑️
                                             </button>
                                         </div>
                                     )}
-                                    <h3 className="text-lg sm:text-xl font-bold text-blue-900 mb-2 sm:mb-3 pr-16 break-words">{team.team_name}</h3>
+                                    <h3 className="text-lg sm:text-xl font-bold text-cyan-800 mb-2 sm:mb-3 pr-16 break-words">{team.team_name}</h3>
                                     <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                                         <p><span className="font-medium text-gray-600">队长：</span>{team.captain_name}</p>
                                         {team.players && team.players.length > 0 && (
-                                            <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t">
+                                            <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-cyan-100">
                                                 <p className="font-medium text-gray-600 mb-1.5 sm:mb-2 text-xs sm:text-sm">队员 ({team.players.length}):</p>
                                                 <ul className="space-y-1">
                                                     {team.players.map((player, idx) => (
@@ -816,24 +827,24 @@ export default function MatchDetailPage() {
                 )}
 
                 {/* Results and Records Section */}
-                <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mt-6 sm:mt-8">
-                    <h2 className="text-lg sm:text-2xl font-bold text-blue-900 mb-4 sm:mb-6">赛事结果与记录</h2>
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft-lg p-4 sm:p-6 mt-6 sm:mt-8 border-2 border-cyan-100">
+                    <h2 className="text-lg sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700 mb-4 sm:mb-6">赛事结果与记录</h2>
 
                     {/* Results */}
-                    <div className="mb-6 sm:mb-8 pb-6 sm:pb-8 border-b last:border-0 last:pb-0 last:mb-0">
+                    <div className="mb-6 sm:mb-8 pb-6 sm:pb-8 border-b border-cyan-100 last:border-0 last:pb-0 last:mb-0">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
-                            <h3 className="text-base sm:text-xl font-semibold text-blue-800">赛事结果公示</h3>
+                            <h3 className="text-base sm:text-xl font-semibold text-cyan-800">赛事结果公示</h3>
                             {isLoggedIn ? (
                                 <button
                                     onClick={() => setEditingResult(!editingResult)}
-                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto"
                                 >
                                     {editingResult ? '取消编辑' : '编辑结果'}
                                 </button>
                             ) : (
                                 <button
                                     onClick={handleRedirectToLogin}
-                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-400 text-white text-sm sm:text-base rounded-lg hover:bg-gray-500 transition-colors w-full sm:w-auto cursor-not-allowed"
+                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors w-full sm:w-auto cursor-not-allowed"
                                 >
                                     🔒 登录后可编辑
                                 </button>
@@ -845,20 +856,20 @@ export default function MatchDetailPage() {
                                 <textarea
                                     value={resultContent}
                                     onChange={(e) => setResultContent(e.target.value)}
-                                    className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                                    className="w-full p-3 sm:p-4 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-sm sm:text-base outline-none transition-all"
                                     rows={8}
                                     placeholder="请输入赛事结果..."
                                 />
                                 <div className="mt-3 sm:mt-4 flex gap-2">
                                     <button
                                         onClick={handleSaveResult}
-                                        className="px-4 sm:px-6 py-2 bg-green-600 text-white text-sm sm:text-base rounded-lg hover:bg-green-700 flex-1 sm:flex-none"
+                                        className="px-4 sm:px-6 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 flex-1 sm:flex-none"
                                     >
                                         保存
                                     </button>
                                     <button
                                         onClick={() => setEditingResult(false)}
-                                        className="px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 text-sm sm:text-base rounded-lg hover:bg-gray-400 flex-1 sm:flex-none"
+                                        className="px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors flex-1 sm:flex-none"
                                     >
                                         取消
                                     </button>
@@ -879,20 +890,20 @@ export default function MatchDetailPage() {
                     {/* Records */}
                     <div>
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
-                            <h3 className="text-base sm:text-xl font-semibold text-blue-800">赛事图文记录</h3>
+                            <h3 className="text-base sm:text-xl font-semibold text-cyan-800">赛事图文记录</h3>
                         </div>
 
                         {isLoggedIn && (
-                            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-cyan-50 rounded-xl border-2 border-cyan-100">
                                 <div className="flex flex-col sm:flex-row gap-2">
                                     <input
                                         type="text"
                                         value={newRecordCaption}
                                         onChange={(e) => setNewRecordCaption(e.target.value)}
-                                        className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                                        className="flex-1 px-3 sm:px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-sm sm:text-base outline-none transition-all"
                                         placeholder="图片说明（可选）"
                                     />
-                                    <label className="px-3 sm:px-4 py-2 bg-blue-600 text-white text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-center">
+                                    <label className="px-3 sm:px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 cursor-pointer text-center">
                                         {uploadingImage ? '上传中...' : '上传图片'}
                                         <input
                                             type="file"
@@ -907,7 +918,7 @@ export default function MatchDetailPage() {
                         )}
 
                         {isLoggedIn && (
-                            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-cyan-50 rounded-xl border-2 border-cyan-100">
                                 <div className="flex flex-col gap-3">
                                     {uploadProgress && (
                                         <div className="w-full">
@@ -915,9 +926,9 @@ export default function MatchDetailPage() {
                                                 <span>上传进度</span>
                                                 <span>{uploadProgress.current} / {uploadProgress.total}</span>
                                             </div>
-                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                            <div className="w-full bg-cyan-100 rounded-full h-2">
                                                 <div
-                                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                                    className="bg-gradient-to-r from-cyan-500 to-teal-500 h-2 rounded-full transition-all duration-300"
                                                     style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
                                                 ></div>
                                             </div>
@@ -928,10 +939,10 @@ export default function MatchDetailPage() {
                                             type="text"
                                             value={newRecordCaption}
                                             onChange={(e) => setNewRecordCaption(e.target.value)}
-                                            className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                                            className="flex-1 px-3 sm:px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-sm sm:text-base outline-none transition-all"
                                             placeholder="图片说明（可选，应用于所有图片）"
                                         />
-                                        <label className={`px-3 sm:px-4 py-2 bg-blue-600 text-white text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-center ${uploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                        <label className={`px-3 sm:px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 cursor-pointer text-center ${uploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                             {uploadingImage ? '上传中...' : '📷 批量上传图片'}
                                             <input
                                                 type="file"
@@ -952,7 +963,7 @@ export default function MatchDetailPage() {
                             <div className="mb-4 sm:mb-6 text-center">
                                 <button
                                     onClick={handleRedirectToLogin}
-                                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-400 text-white text-sm sm:text-base rounded-lg hover:bg-gray-500 transition-colors cursor-not-allowed w-full sm:w-auto"
+                                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors cursor-not-allowed w-full sm:w-auto"
                                 >
                                     📷 登录即可上传赛事照片
                                 </button>
@@ -964,30 +975,37 @@ export default function MatchDetailPage() {
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                 {records.map((record) => (
-                                    <div key={record.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow relative group">
+                                    <div key={record.id} className="border-2 border-cyan-100 rounded-xl overflow-hidden hover:shadow-soft hover:-translate-y-1 transition-all duration-300 relative group bg-white/50">
                                         {isLoggedIn && (
                                             <>
                                                 <button
                                                     onClick={() => setEditingRecord(record)}
-                                                    className="absolute top-2 left-2 bg-white/90 text-blue-500 hover:text-blue-700 p-1.5 sm:p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    className="absolute top-2 left-2 bg-white/90 text-cyan-500 hover:text-cyan-700 p-1.5 sm:p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow"
                                                     title="编辑说明"
                                                 >
                                                     ✏️
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteRecord(record.id)}
-                                                    className="absolute top-2 right-2 bg-white/90 text-red-500 hover:text-red-700 p-1.5 sm:p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    className="absolute top-2 right-2 bg-white/90 text-red-500 hover:text-red-700 p-1.5 sm:p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow"
                                                     title="删除记录"
                                                 >
                                                     🗑️
                                                 </button>
                                             </>
                                         )}
-                                        <img
-                                            src={record.image_url}
-                                            alt={record.caption || '赛事记录'}
-                                            className="w-full h-40 sm:h-48 object-cover"
-                                        />
+                                        <div className="relative w-full h-40 sm:h-48 bg-cyan-100">
+                                            <Image
+                                                src={getOptimizedImageUrl(record.image_url, 800, 75)}
+                                                alt={record.caption || '赛事记录'}
+                                                fill
+                                                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                                loading="lazy"
+                                                placeholder="blur"
+                                                blurDataURL={getBlurPlaceholder()}
+                                            />
+                                        </div>
                                         {record.caption && (
                                             <div className="p-2 sm:p-3">
                                                 <p className="text-gray-700 text-xs sm:text-sm leading-relaxed">{record.caption}</p>
@@ -1000,64 +1018,72 @@ export default function MatchDetailPage() {
                                             <div className="p-2 sm:p-3">
                                                 <button
                                                     onClick={() => setEditingRecord(record)}
-                                                    className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium"
+                                                    className="text-cyan-600 hover:text-cyan-700 text-xs sm:text-sm font-medium"
                                                 >
                                                     📝 添加说明
                                                 </button>
                                             </div>
                                         )}
-                                        <div className="px-2 sm:px-3 pb-2 sm:pb-3">
-                                            <button
-                                                onClick={() => setViewingComments(viewingComments === record.id ? null : record.id)}
-                                                className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium w-full text-left"
-                                            >
-                                                💬 {record.comments?.length || 0} 条评论
-                                            </button>
-                                        </div>
 
-                                        {viewingComments === record.id && (
-                                            <div className="px-2 sm:px-3 pb-2 sm:pb-3 border-t pt-2 sm:pt-3 bg-gray-50">
-                                                <div className="max-h-32 sm:max-h-40 overflow-y-auto mb-2 space-y-1">
-                                                    {record.comments && Array.isArray(record.comments) && record.comments.length > 0 ? (
-                                                        record.comments.map((comment, idx) => (
-                                                            <p key={idx} className="text-xs sm:text-sm text-gray-700 bg-white p-1.5 sm:p-2 rounded break-words">
-                                                                {comment}
-                                                            </p>
-                                                        ))
+                                        {/* 评论区 */}
+                                        <div className="p-2 sm:p-3 border-t border-cyan-100 bg-cyan-50/50">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-xs sm:text-sm font-medium text-cyan-700">
+                                                    💬 评论 ({record.comments?.length || 0})
+                                                </span>
+                                                <button
+                                                    onClick={() => setViewingComments(viewingComments === record.id ? null : record.id)}
+                                                    className="text-xs text-cyan-600 hover:text-cyan-700 font-medium"
+                                                >
+                                                    {viewingComments === record.id ? '收起回复' : '查看'}
+                                                </button>
+                                            </div>
+
+                                            {viewingComments === record.id && (
+                                                <div className="space-y-2">
+                                                    {/* 评论列表 */}
+                                                    {record.comments && record.comments.length > 0 ? (
+                                                        <div className="max-h-32 overflow-y-auto space-y-1.5 mb-2">
+                                                            {record.comments.map((comment, idx) => (
+                                                                <div key={idx} className="text-xs bg-white rounded-lg p-2 border border-cyan-100">
+                                                                    <p className="text-gray-700">{comment}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     ) : (
-                                                        <p className="text-xs sm:text-sm text-gray-500">暂无评论</p>
+                                                        <p className="text-xs text-gray-500 text-center py-2">暂无评论</p>
+                                                    )}
+
+                                                    {/* 发表评论 */}
+                                                    {isLoggedIn && (
+                                                        <div className="flex gap-1.5">
+                                                            <input
+                                                                type="text"
+                                                                value={newComment}
+                                                                onChange={(e) => setNewComment(e.target.value)}
+                                                                className="flex-1 px-2 py-1.5 border-2 border-cyan-200 rounded-lg focus:ring-2 focus:ring-cyan-300 focus:border-cyan-300 text-xs outline-none transition-all"
+                                                                placeholder="写下你的评论..."
+                                                            />
+                                                            <button
+                                                                onClick={() => handleAddComment(record.id)}
+                                                                className="px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-xs rounded-lg hover:shadow-soft transition-all duration-300 whitespace-nowrap"
+                                                            >
+                                                                发送
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </div>
-                                                {isLoggedIn && (
-                                                    <div className="flex gap-1.5 sm:gap-2">
-                                                        <input
-                                                            type="text"
-                                                            value={newComment}
-                                                            onChange={(e) => setNewComment(e.target.value)}
-                                                            onKeyPress={(e) => {
-                                                                if (e.key === 'Enter') {
-                                                                    handleAddComment(record.id);
-                                                                }
-                                                            }}
-                                                            className="flex-1 px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                                                            placeholder="写下你的评论..."
-                                                        />
-                                                        <button
-                                                            onClick={() => handleAddComment(record.id)}
-                                                            className="px-2 sm:px-3 py-1 bg-blue-600 text-white text-xs sm:text-sm rounded hover:bg-blue-700 whitespace-nowrap"
-                                                        >
-                                                            发送
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         )}
+
                     </div>
                 </div>
+
+
 
             </div>
         </div>
@@ -1069,7 +1095,6 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
     const [captainName, setCaptainName] = useState('');
     const [players, setPlayers] = useState<any[]>([]);
     const [newPlayerName, setNewPlayerName] = useState('');
-
     const handleAddPlayer = () => {
         if (!newPlayerName.trim()) return;
         setPlayers([...players, { name: newPlayerName }]);
@@ -1100,9 +1125,9 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
-                <h2 className="text-2xl font-bold text-blue-900 mb-4">添加参赛队伍</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-soft-lg border-2 border-cyan-100">
+                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700 mb-4">添加参赛队伍</h2>
 
                 <div className="space-y-4">
                     <div>
@@ -1111,7 +1136,7 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
                             type="text"
                             value={teamName}
                             onChange={(e) => setTeamName(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition-all"
                             placeholder="请输入队名"
                         />
                     </div>
@@ -1122,7 +1147,7 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
                             type="text"
                             value={captainName}
                             onChange={(e) => setCaptainName(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition-all"
                             placeholder="请输入队长姓名"
                         />
                     </div>
@@ -1135,24 +1160,24 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
                                 value={newPlayerName}
                                 onChange={(e) => setNewPlayerName(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="flex-1 px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition-all"
                                 placeholder="队员姓名"
                             />
                             <button
                                 onClick={handleAddPlayer}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:shadow-soft transition-all duration-300"
                             >
                                 添加
                             </button>
                         </div>
                         {players.length > 0 && (
-                            <ul className="border border-gray-200 rounded-lg divide-y max-h-40 overflow-y-auto">
+                            <ul className="border-2 border-cyan-100 rounded-xl divide-y bg-white/50">
                                 {players.map((player, idx) => (
                                     <li key={idx} className="px-4 py-2 flex justify-between items-center">
                                         <span className="text-gray-700">{player.name}</span>
                                         <button
                                             onClick={() => handleRemovePlayer(idx)}
-                                            className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                            className="text-red-500 hover:text-red-700 text-sm font-medium bg-red-50 px-3 py-1 rounded-lg hover:bg-red-100 transition-colors"
                                         >
                                             删除
                                         </button>
@@ -1166,13 +1191,13 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
                 <div className="mt-6 flex gap-2 justify-end">
                     <button
                         onClick={onClose}
-                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition-colors"
                     >
                         取消
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:shadow-soft transition-all duration-300"
                     >
                         确认添加
                     </button>
@@ -1181,6 +1206,7 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
         </div>
     );
 }
+
 
 function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => void; onEdit: (data: any) => void }) {
     const [teamName, setTeamName] = useState(team.team_name);
@@ -1218,9 +1244,9 @@ function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => v
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
-                <h2 className="text-2xl font-bold text-blue-900 mb-4">编辑队伍信息</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-soft-lg border-2 border-cyan-100">
+                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700 mb-4">编辑队伍信息</h2>
 
                 <div className="space-y-4">
                     <div>
@@ -1229,7 +1255,7 @@ function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => v
                             type="text"
                             value={teamName}
                             onChange={(e) => setTeamName(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition-all"
                             placeholder="请输入队名"
                         />
                     </div>
@@ -1240,7 +1266,7 @@ function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => v
                             type="text"
                             value={captainName}
                             onChange={(e) => setCaptainName(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition-all"
                             placeholder="请输入队长姓名"
                         />
                     </div>
@@ -1253,24 +1279,24 @@ function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => v
                                 value={newPlayerName}
                                 onChange={(e) => setNewPlayerName(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="flex-1 px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition-all"
                                 placeholder="队员姓名"
                             />
                             <button
                                 onClick={handleAddPlayer}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:shadow-soft transition-all duration-300"
                             >
                                 添加
                             </button>
                         </div>
                         {players.length > 0 && (
-                            <ul className="border border-gray-200 rounded-lg divide-y max-h-40 overflow-y-auto">
+                            <ul className="border-2 border-cyan-100 rounded-xl divide-y bg-white/50">
                                 {players.map((player, idx) => (
                                     <li key={idx} className="px-4 py-2 flex justify-between items-center">
                                         <span className="text-gray-700">{player.name}</span>
                                         <button
                                             onClick={() => handleRemovePlayer(idx)}
-                                            className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                            className="text-red-500 hover:text-red-700 text-sm font-medium bg-red-50 px-3 py-1 rounded-lg hover:bg-red-100 transition-colors"
                                         >
                                             删除
                                         </button>
@@ -1284,13 +1310,13 @@ function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => v
                 <div className="mt-6 flex gap-2 justify-end">
                     <button
                         onClick={onClose}
-                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition-colors"
                     >
                         取消
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:shadow-soft transition-all duration-300"
                     >
                         保存修改
                     </button>
@@ -1303,49 +1329,49 @@ function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => v
 
 
 
-    function EditRecordCaptionModal({ record, onClose, onEdit }: { record: Record; onClose: () => void; onEdit: (id: string, caption: string) => void }) {
+function EditRecordCaptionModal({ record, onClose, onEdit }: { record: Record; onClose: () => void; onEdit: (id: string, caption: string) => void }) {
         const [caption, setCaption] = useState(record.caption);
 
         const handleSubmit = () => {
             onEdit(record.id, caption);
         };
 
-        return (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl">
-                    <h2 className="text-2xl font-bold text-blue-900 mb-4">编辑图片说明</h2>
+    return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-soft-lg border-2 border-cyan-100">
+                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700 mb-4">编辑图片说明</h2>
 
-                    <div className="mb-4">
-                        <img
-                            src={record.image_url}
-                            alt={caption || '图片预览'}
-                            className="w-full h-64 object-cover rounded-lg mb-4"
-                        />
-                        <label className="block text-sm font-medium text-gray-700 mb-2">说明文字</label>
-                        <textarea
-                            value={caption}
-                            onChange={(e) => setCaption(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            rows={4}
-                            placeholder="请输入图片说明..."
-                        />
-                    </div>
+                <div className="mb-4">
+                    <img
+                        src={record.image_url}
+                        alt={caption || '图片预览'}
+                        className="w-full h-64 object-cover rounded-xl mb-4 border-2 border-cyan-100"
+                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">说明文字</label>
+                    <textarea
+                        value={caption}
+                        onChange={(e) => setCaption(e.target.value)}
+                        className="w-full px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition-all"
+                        rows={4}
+                        placeholder="请输入图片说明..."
+                    />
+                </div>
 
-                    <div className="flex gap-2 justify-end">
-                        <button
-                            onClick={onClose}
-                            className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                        >
-                            取消
-                        </button>
-                        <button
-                            onClick={handleSubmit}
-                            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                            保存
-                        </button>
-                    </div>
+                <div className="flex gap-2 justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition-colors"
+                    >
+                        取消
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:shadow-soft transition-all duration-300"
+                    >
+                        保存
+                    </button>
                 </div>
             </div>
-        );
-    }
+        </div>
+    );
+}
