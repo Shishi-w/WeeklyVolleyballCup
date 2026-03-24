@@ -65,9 +65,10 @@ export default function Home() {
               Weekly Volleyball Cup
             </h1>
 
-            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-8 sm:mb-12 px-2 font-light">
-              不专业的排球赛事管理平台
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-12 sm:mb-16 px-2 font-light">
+              一个不专业的排球赛事管理平台
             </p>
+
 
             {!showUsers ? (
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4">
