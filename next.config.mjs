@@ -1,10 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 输出为独立 Node.js 服务器（可选，适用于某些部署场景）
   output: 'standalone',
-  
-  // 启用 React 严格模式
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'ygjfeaynthlbtmzmbabn.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200],
+    imageSizes: [16, 32, 48, 64, 96],
+  },
 };
 
 export default nextConfig;
