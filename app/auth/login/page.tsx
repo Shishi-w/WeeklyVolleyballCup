@@ -59,7 +59,7 @@ function LoginForm() {
             
             <div className="p-8 border rounded-3xl shadow-soft-lg w-96 bg-white/90 backdrop-blur-sm border-pink-100 relative z-10">
                 <div className="text-center mb-6">
-                    <FlowerIcon className="w-20 h-20 mx-auto mb-4 animate-float" />
+
                     <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-peach-400">欢迎回来</h1>
                     <p className="text-gray-500 text-sm mt-2">使用邮箱登录</p>
                 </div>

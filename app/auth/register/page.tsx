@@ -63,12 +63,12 @@ export default function RegisterPage() {
       
       <div className="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-3xl shadow-soft-lg p-8 border-2 border-pink-100 relative z-10">
         <div className="text-center mb-8">
-          <FlowerIcon className="w-24 h-24 mx-auto mb-4 animate-float" />
+
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-peach-400 mb-2">
             创建账户
           </h2>
           <p className="text-gray-600">
-            加入我们，开始使用 ✨
+            加入我们，开始使用
           </p>
         </div>
 
@@ -81,7 +81,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              📧 邮箱
+              邮箱
             </label>
             <input
               id="email"
@@ -96,7 +96,7 @@ export default function RegisterPage() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              🔒 密码
+              密码
             </label>
             <input
               id="password"
@@ -111,7 +111,7 @@ export default function RegisterPage() {
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-              🔐 确认密码
+              确认密码
             </label>
             <input
               id="confirmPassword"
@@ -134,7 +134,7 @@ export default function RegisterPage() {
                 <LoadingIcon className="inline-block w-6 h-6 mr-2 text-white" /> 注册中...
               </>
             ) : (
-              '注册 ✨'
+              '注册'
             )}
 
           </button>
