@@ -184,7 +184,7 @@ export default function MatchDetailPage() {
     const fetchData = async () => {
         try {
             const { data: matchData, error: matchError } = await supabase
-                .from('matches')
+                .from('matches_with_status')
                 .select('*')
                 .eq('id', matchId)
                 .single();
@@ -248,7 +248,7 @@ export default function MatchDetailPage() {
         }
     };
 
-    const canEdit = isLoggedIn && match?.status !== 'completed';
+    const canEdit = isLoggedIn ;
 
     const handleRedirectToLogin = () => {
         const currentPath = window.location.pathname;
@@ -261,7 +261,7 @@ export default function MatchDetailPage() {
                 handleRedirectToLogin();
                 return;
             }
-            alert(match?.status === 'completed' ? '已结束的赛事不能编辑' : '请先登录后再编辑主题');
+            alert('请先登录后再编辑主题');
             return;
         }
 
@@ -405,7 +405,7 @@ export default function MatchDetailPage() {
                 handleRedirectToLogin();
                 return;
             }
-            alert(match?.status === 'completed' ? '已结束的赛事不能添加队伍' : '请先登录后再添加队伍');
+            alert('请先登录后再添加队伍');
             return;
         }
 
@@ -432,14 +432,14 @@ export default function MatchDetailPage() {
 
     const handleDeleteTeam = async (teamId: string) => {
 
-    if (!canEdit) {
-        if (!isLoggedIn) {
-            handleRedirectToLogin();
+        if (!canEdit) {
+            if (!isLoggedIn) {
+                handleRedirectToLogin();
+                return;
+            }
+            alert('请先登录后再删除队伍');
             return;
         }
-        alert(match?.status === 'completed' ? '已结束的赛事不能删除队伍' : '请先登录后再删除队伍');
-        return;
-    }
 
     if (!confirm('确定要删除这支队伍吗？')) return;
 
@@ -465,7 +465,7 @@ export default function MatchDetailPage() {
                 handleRedirectToLogin();
                 return;
             }
-            alert(match?.status === 'completed' ? '已结束的赛事不能编辑队伍' : '请先登录后再编辑队伍');
+            alert('请先登录后再编辑队伍');
             return;
         }
 
@@ -606,7 +606,7 @@ export default function MatchDetailPage() {
                         <h1 className="text-2xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700 break-words w-full sm:w-auto">{match.name}</h1>
                         {isCompleted && (
                             <span className="bg-teal-100 text-teal-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap border-2 border-teal-200">
-                                ✅ 已结束 (可编辑)
+                                 已结束
                             </span>
                         )}
                     </div>

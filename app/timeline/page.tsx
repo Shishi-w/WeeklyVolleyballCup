@@ -26,10 +26,15 @@ export default function TimelinePage() {
     fetchMatches();
   }, [filter]);
 
+
+
+
+
+
   const fetchMatches = async () => {
     try {
       let query = supabase
-        .from('matches')
+        .from('matches_with_status')
         .select('*')
         .order('start_date', { ascending: false });
 
