@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/browser';
 import Link from 'next/link';
-import Image from 'next/image';
-import { VolleyballIcon, CalendarIcon, UsersIcon, FlowerIcon, LoadingIcon} from '@/components/Icons';
+import { VolleyballIcon, CalendarIcon, UsersIcon } from '@/components/Icons';
 import AnnouncementBoard from '@/components/AnnouncementBoard';
 
 type Profile = {
@@ -24,9 +23,6 @@ type Stats = {
 };
 
 export default function Home() {
-  const [showUsers, setShowUsers] = useState(false);
-  const [users, setUsers] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<Profile | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -112,31 +108,6 @@ export default function Home() {
       }
     } catch (error) {
       console.error('获取统计数据失败:', error);
-    }
-  };
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) {
-        alert('请先登录');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*');
-
-      if (error) throw error;
-      setUsers(data || []);
-      setShowUsers(true);
-    } catch (error) {
-      console.error('获取用户列表失败:', error);
-      alert('获取用户列表失败，请稍后重试');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -326,131 +297,54 @@ export default function Home() {
             </div>
 
             {/* 主按钮组 */}
-            {!showUsers ? (
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4">
-                  <Link
-                      href="/timeline"
-                      className="group relative overflow-hidden bg-pink-400   text-white px-10 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl hover:scale-105 transition-all duration-300 w-full sm:w-auto border border-white/50"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r  opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                  <CalendarIcon className="w-6 h-6" />
-                  赛事时间轴
-                  <span className="group-hover:translate-x-1 transition-transform">→</span>
-                </span>
-                  </Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4">
+              <Link
+                  href="/timeline"
+                  className="group relative overflow-hidden bg-pink-400   text-white px-10 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl hover:scale-105 transition-all duration-300 w-full sm:w-auto border border-white/50"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r  opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span className="relative z-10 flex items-center justify-center gap-2">
+              <CalendarIcon className="w-6 h-6" />
+              赛事时间轴
+              <span className="group-hover:translate-x-1 transition-transform">→</span>
+            </span>
+              </Link>
 
-                  <button
-                      onClick={fetchUsers}
-                      disabled={loading}
-                      className="group relative overflow-hidden bg-white/95 text-pink-500 px-10 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl hover:scale-105 transition-all duration-300 disabled:opacity-50 w-full sm:w-auto border-2 border-pink-200"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-pink-50 to-amber-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                  <UsersIcon className="w-6 h-6" />
-                      {loading ? (
-                          <>
-                            <LoadingIcon className="w-5 h-5 animate-spin" />
-                            加载中...
-                          </>
-                      ) : (
-                          <>查看球友列表</>
-                      )}
-                </span>
-                  </button>
-                </div>
-            ) : (
-                <div className="flex gap-4 justify-center px-4">
-                  <button
-                      onClick={() => setShowUsers(false)}
-                      className="bg-white/95 text-gray-700 px-10 py-4 rounded-2xl text-lg font-bold hover:bg-pink-50 hover:shadow-xl transition-all duration-300 border-2 border-pink-100"
-                  >
-                    返回首页
-                  </button>
-                </div>
-            )}
-              {/* 赛事公告栏 */}
-              <div className="mt-8 sm:mt-12">
+              <Link
+                  href="/users"
+                  className="group relative overflow-hidden bg-white/95 text-pink-500 px-10 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl hover:scale-105 transition-all duration-300 disabled:opacity-50 w-full sm:w-auto border-2 border-pink-200"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-50 to-amber-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span className="relative z-10 flex items-center justify-center gap-2">
+              <UsersIcon className="w-6 h-6" />
+                  查看球友列表
+            </span>
+              </Link>
+
+              {currentUser && (
+                <Link
+                    href="/my-teams"
+                    className="group relative overflow-hidden bg-indigo-600 text-white px-10 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl hover:scale-105 transition-all duration-300 w-full sm:w-auto border border-white/50"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                <VolleyballIcon className="w-6 h-6" />
+                我的队伍
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </span>
+                </Link>
+              )}
+            </div>
+
+
+            {/* 赛事公告栏 */}
+            <div className="mt-8 sm:mt-12">
                   <AnnouncementBoard isLoggedIn={isLoggedIn} />
               </div>
           </div>
 
-          {/* User List Section - 改进版 */}
-          {showUsers && (
-              <div className="max-w-5xl mx-auto">
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-pink-300 to-amber-200 rounded-3xl blur-xl opacity-30"></div>
-                  <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50">
-                    <div className="text-center mb-8">
-                      <div className="inline-block mb-4">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-pink-300 to-amber-200 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                          <UsersIcon className="w-20 h-20 mx-auto relative z-10" />
-                        </div>
-                      </div>
-                      <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-amber-500 mb-3">
-                        球友列表
-                      </h2>
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <p className="text-gray-600 text-sm">
-                          {users.length} 位球友已加入
-                        </p>
-                      </div>
-                    </div>
-
-                    {loading ? (
-                        <div className="text-center py-16">
-                          <LoadingIcon className="h-16 w-16 mx-auto text-pink-500 animate-spin" />
-                          <p className="text-gray-600 mt-6">加载中...</p>
-                        </div>
-                    ) : users.length === 0 ? (
-                        <div className="text-center py-16">
-                          <FlowerIcon className="w-20 h-20 mx-auto mb-6 text-pink-400" />
-                          <p className="text-gray-600 text-lg">暂无球友，快来成为第一个吧！</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                            <tr className="border-b-2 border-pink-100">
-                              <th className="text-left py-4 px-4 text-pink-600 font-bold text-sm">#</th>
-                              <th className="text-left py-4 px-4 text-pink-600 font-bold text-sm">球友</th>
-                              <th className="text-right py-4 px-4 text-pink-600 font-bold text-sm">加入时间</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {users.map((user, index) => (
-                                <tr key={user.id} className="border-b border-pink-50 hover:bg-pink-50/30 transition-colors group">
-                                  <td className="py-4 px-4 text-gray-600">
-                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-amber-400 text-white font-bold text-sm">
-                                {index + 1}
-                              </span>
-                                  </td>
-                                  <td className="py-4 px-4">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-400 to-amber-400 flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                                        {(user.username || 'U').charAt(0).toUpperCase()}
-                                      </div>
-                                      <span className="text-gray-700 font-medium">
-                                  {user.username || '未设置用户名'}
-                                </span>
-                                    </div>
-                                  </td>
-                                  <td className="text-right py-4 px-4 text-gray-600 text-sm whitespace-nowrap">
-                                    {user.created_at ? new Date(user.created_at).toLocaleString('zh-CN') : '-'}
-                                  </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                          </table>
-                        </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-          )}
         </div>
       </div>
   );
 }
+

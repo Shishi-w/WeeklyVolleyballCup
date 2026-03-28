@@ -51,8 +51,9 @@ type Team = {
     id: string;
     team_name: string;
     captain_name: string;
+    captain_id?: string;
     captain_contact: string;
-    players: any[];
+    players: { user_id: string; name: string; position?: string }[];
     expected_position: string;
 };
 
@@ -85,6 +86,9 @@ export default function MatchDetailPage() {
     const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
     const [records, setRecords] = useState<any[]>([]);
+    const [showRecordResults, setShowRecordResults] = useState(false);
+    const [matchResults, setMatchResults] = useState<any[]>([]);
+    const [userAchievements, setUserAchievements] = useState<any[]>([]);
 
     useEffect(() => {
         checkAuth();
@@ -740,19 +744,30 @@ export default function MatchDetailPage() {
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft-lg p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-cyan-100">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
                         <h2 className="text-lg sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700">参赛队伍</h2>
-                        {canEdit ? (
-                            <button
-                                onClick={() => setShowAddTeam(true)}
-                                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto flex items-center justify-center gap-2"
-                            >
-                                <span className="text-lg">+</span> 添加队伍
-                            </button>
-                        ) : (
+                        <div className="flex gap-2">
+                            {isCompleted && canEdit && (
+                                <button
+                                    onClick={() => setShowRecordResults(true)}
+                                    className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 flex items-center gap-2"
+                                >
+                                    🏆 记录比赛结果
+                                </button>
+                            )}
+                            {canEdit && (
+                                <button
+                                    onClick={() => setShowAddTeam(true)}
+                                    className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 flex items-center justify-center gap-2"
+                                >
+                                    <span className="text-lg">+</span> 添加队伍
+                                </button>
+                            )}
+                        </div>
+                        {!canEdit && (
                             <button
                                 onClick={handleRedirectToLogin}
-                                className="px-4 py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors w-full sm:w-auto cursor-not-allowed"
+                                className="px-4 py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors cursor-not-allowed"
                             >
-                                🔒 登录后可添加
+                                🔒 登录后可管理
                             </button>
                         )}
                     </div>
@@ -826,6 +841,14 @@ export default function MatchDetailPage() {
                         record={editingRecord}
                         onClose={() => setEditingRecord(null)}
                         onEdit={handleEditRecordCaption}
+                    />
+                )}
+                {showRecordResults && isLoggedIn && (
+                    <RecordResultsModal
+                        matchId={matchId}
+                        teams={teams}
+                        onClose={() => setShowRecordResults(false)}
+                        onSave={fetchData}
                     />
                 )}
 
@@ -1148,22 +1171,57 @@ function ImageLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () =>
 
 function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: any) => void }) {
     const [teamName, setTeamName] = useState('');
+    const [captainId, setCaptainId] = useState('');
     const [captainName, setCaptainName] = useState('');
-    const [players, setPlayers] = useState<any[]>([]);
-    const [newPlayerName, setNewPlayerName] = useState('');
-    const handleAddPlayer = () => {
-        if (!newPlayerName.trim()) return;
-        setPlayers([...players, { name: newPlayerName }]);
-        setNewPlayerName('');
+    const [players, setPlayers] = useState<{ user_id: string; name: string; position?: string }[]>([]);
+    const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+    const supabase = createClient();
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const fetchUsers = async () => {
+        try {
+            const { data: users, error } = await supabase
+                .from('profiles')
+                .select('id, username')
+                .order('username');
+
+            if (error) throw error;
+            setAvailableUsers(users || []);
+        } catch (error) {
+            console.error('获取用户列表失败:', error);
+        }
     };
 
-    const handleRemovePlayer = (index: number) => {
-        setPlayers(players.filter((_, i) => i !== index));
+    const handleCaptainChange = (userId: string) => {
+        setCaptainId(userId);
+        const user = availableUsers.find(u => u.id === userId);
+        setCaptainName(user?.username || '');
+    };
+
+    const handleAddPlayer = (userId: string) => {
+        if (!userId) return;
+        const user = availableUsers.find(u => u.id === userId);
+        if (!user) return;
+
+        // 检查是否已经添加
+        if (players.some(p => p.user_id === userId)) {
+            alert('该用户已经在队伍中了');
+            return;
+        }
+
+        setPlayers([...players, { user_id: userId, name: user.username }]);
+    };
+
+    const handleRemovePlayer = (userId: string) => {
+        setPlayers(players.filter(p => p.user_id !== userId));
     };
 
     const handleSubmit = () => {
-        if (!teamName || !captainName) {
-            alert('请填写队名和队长姓名');
+        if (!teamName || !captainId) {
+            alert('请填写队名和选择队长');
             return;
         }
 
@@ -1172,12 +1230,6 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
             captain_name: captainName,
             players: players,
         });
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            handleAddPlayer();
-        }
     };
 
     return (
@@ -1198,41 +1250,50 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">队长姓名 *</label>
-                        <input
-                            type="text"
-                            value={captainName}
-                            onChange={(e) => setCaptainName(e.target.value)}
+                        <label className="block text-sm font-medium text-gray-700 mb-2">队长 *</label>
+                        <select
+                            value={captainId}
+                            onChange={(e) => handleCaptainChange(e.target.value)}
                             className="w-full px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition-all"
-                            placeholder="请输入队长姓名"
-                        />
+                        >
+                            <option value="">选择队长</option>
+                            {availableUsers.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                    {user.username}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">队员列表</label>
                         <div className="flex gap-2 mb-2">
-                            <input
-                                type="text"
-                                value={newPlayerName}
-                                onChange={(e) => setNewPlayerName(e.target.value)}
-                                onKeyPress={handleKeyPress}
+                            <select
+                                onChange={(e) => {
+                                    if (e.target.value) {
+                                        handleAddPlayer(e.target.value);
+                                        e.target.value = ''; // 重置选择
+                                    }
+                                }}
                                 className="flex-1 px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition-all"
-                                placeholder="队员姓名"
-                            />
-                            <button
-                                onClick={handleAddPlayer}
-                                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:shadow-soft transition-all duration-300"
                             >
-                                添加
-                            </button>
+                                <option value="">选择要添加的队员</option>
+                                {availableUsers
+                                    .filter(user => user.id !== captainId && !players.some(p => p.user_id === user.id))
+                                    .map((user) => (
+                                        <option key={user.id} value={user.id}>
+                                            {user.username}
+                                        </option>
+                                    ))}
+                            </select>
                         </div>
                         {players.length > 0 && (
                             <ul className="border-2 border-cyan-100 rounded-xl divide-y bg-white/50">
-                                {players.map((player, idx) => (
-                                    <li key={idx} className="px-4 py-2 flex justify-between items-center">
+                                {players.map((player) => (
+                                    <li key={player.user_id} className="px-4 py-2 flex justify-between items-center">
                                         <span className="text-gray-700">{player.name}</span>
                                         <button
-                                            onClick={() => handleRemovePlayer(idx)}
+                                            onClick={() => handleRemovePlayer(player.user_id)}
                                             className="text-red-500 hover:text-red-700 text-sm font-medium bg-red-50 px-3 py-1 rounded-lg hover:bg-red-100 transition-colors"
                                         >
                                             删除
@@ -1266,23 +1327,63 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
 
 function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => void; onEdit: (data: any) => void }) {
     const [teamName, setTeamName] = useState(team.team_name);
+    const [captainId, setCaptainId] = useState('');
     const [captainName, setCaptainName] = useState(team.captain_name);
-    const [players, setPlayers] = useState<any[]>(team.players || []);
-    const [newPlayerName, setNewPlayerName] = useState('');
+    const [players, setPlayers] = useState<{ user_id: string; name: string; position?: string }[]>(team.players || []);
+    const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+    const supabase = createClient();
 
-    const handleAddPlayer = () => {
-        if (!newPlayerName.trim()) return;
-        setPlayers([...players, { name: newPlayerName }]);
-        setNewPlayerName('');
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const fetchUsers = async () => {
+        try {
+            const { data: users, error } = await supabase
+                .from('profiles')
+                .select('id, username')
+                .order('username');
+
+            if (error) throw error;
+            setAvailableUsers(users || []);
+
+            // 找到当前队长的ID
+            const currentCaptain = users?.find(u => u.username === team.captain_name);
+            if (currentCaptain) {
+                setCaptainId(currentCaptain.id);
+            }
+        } catch (error) {
+            console.error('获取用户列表失败:', error);
+        }
     };
 
-    const handleRemovePlayer = (index: number) => {
-        setPlayers(players.filter((_, i) => i !== index));
+    const handleCaptainChange = (userId: string) => {
+        setCaptainId(userId);
+        const user = availableUsers.find(u => u.id === userId);
+        setCaptainName(user?.username || '');
+    };
+
+    const handleAddPlayer = (userId: string) => {
+        if (!userId) return;
+        const user = availableUsers.find(u => u.id === userId);
+        if (!user) return;
+
+        // 检查是否已经添加
+        if (players.some(p => p.user_id === userId)) {
+            alert('该用户已经在队伍中了');
+            return;
+        }
+
+        setPlayers([...players, { user_id: userId, name: user.username }]);
+    };
+
+    const handleRemovePlayer = (userId: string) => {
+        setPlayers(players.filter(p => p.user_id !== userId));
     };
 
     const handleSubmit = () => {
-        if (!teamName || !captainName) {
-            alert('请填写队名和队长姓名');
+        if (!teamName || !captainId) {
+            alert('请填写队名和选择队长');
             return;
         }
 
@@ -1291,12 +1392,6 @@ function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => v
             captain_name: captainName,
             players: players,
         });
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            handleAddPlayer();
-        }
     };
 
     return (
@@ -1317,41 +1412,50 @@ function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => v
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">队长姓名 *</label>
-                        <input
-                            type="text"
-                            value={captainName}
-                            onChange={(e) => setCaptainName(e.target.value)}
+                        <label className="block text-sm font-medium text-gray-700 mb-2">队长 *</label>
+                        <select
+                            value={captainId}
+                            onChange={(e) => handleCaptainChange(e.target.value)}
                             className="w-full px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition-all"
-                            placeholder="请输入队长姓名"
-                        />
+                        >
+                            <option value="">选择队长</option>
+                            {availableUsers.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                    {user.username}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">队员列表</label>
                         <div className="flex gap-2 mb-2">
-                            <input
-                                type="text"
-                                value={newPlayerName}
-                                onChange={(e) => setNewPlayerName(e.target.value)}
-                                onKeyPress={handleKeyPress}
+                            <select
+                                onChange={(e) => {
+                                    if (e.target.value) {
+                                        handleAddPlayer(e.target.value);
+                                        e.target.value = ''; // 重置选择
+                                    }
+                                }}
                                 className="flex-1 px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition-all"
-                                placeholder="队员姓名"
-                            />
-                            <button
-                                onClick={handleAddPlayer}
-                                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:shadow-soft transition-all duration-300"
                             >
-                                添加
-                            </button>
+                                <option value="">选择要添加的队员</option>
+                                {availableUsers
+                                    .filter(user => user.id !== captainId && !players.some(p => p.user_id === user.id))
+                                    .map((user) => (
+                                        <option key={user.id} value={user.id}>
+                                            {user.username}
+                                        </option>
+                                    ))}
+                            </select>
                         </div>
                         {players.length > 0 && (
                             <ul className="border-2 border-cyan-100 rounded-xl divide-y bg-white/50">
-                                {players.map((player, idx) => (
-                                    <li key={idx} className="px-4 py-2 flex justify-between items-center">
+                                {players.map((player) => (
+                                    <li key={player.user_id} className="px-4 py-2 flex justify-between items-center">
                                         <span className="text-gray-700">{player.name}</span>
                                         <button
-                                            onClick={() => handleRemovePlayer(idx)}
+                                            onClick={() => handleRemovePlayer(player.user_id)}
                                             className="text-red-500 hover:text-red-700 text-sm font-medium bg-red-50 px-3 py-1 rounded-lg hover:bg-red-100 transition-colors"
                                         >
                                             删除
@@ -1425,6 +1529,268 @@ function EditRecordCaptionModal({ record, onClose, onEdit }: { record: Record; o
                         className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:shadow-soft transition-all duration-300"
                     >
                         保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function RecordResultsModal({ matchId, teams, onClose, onSave }: { matchId: string; teams: Team[]; onClose: () => void; onSave: () => void }) {
+    const [results, setResults] = useState<any[]>([]);
+    const [achievements, setAchievements] = useState<any[]>([]);
+    const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+    const supabase = createClient();
+
+    useEffect(() => {
+        // 初始化结果数据
+        const initialResults = teams.map(team => ({
+            team_id: team.id,
+            team_name: team.team_name,
+            rank: 0,
+            points: 0,
+            is_winner: false
+        }));
+        setResults(initialResults);
+
+        // 获取用户列表
+        fetchUsers();
+    }, [teams]);
+
+    const fetchUsers = async () => {
+        try {
+            const { data: users, error } = await supabase
+                .from('profiles')
+                .select('id, username')
+                .order('username');
+
+            if (error) throw error;
+            setAvailableUsers(users || []);
+        } catch (error) {
+            console.error('获取用户列表失败:', error);
+        }
+    };
+
+    const updateResult = (teamId: string, field: string, value: any) => {
+        setResults(prev => prev.map(result =>
+            result.team_id === teamId ? { ...result, [field]: value } : result
+        ));
+    };
+
+    const addAchievement = () => {
+        setAchievements(prev => [...prev, {
+            id: Date.now(),
+            user_id: '',
+            achievement_type: 'participation',
+            title: '',
+            description: '',
+            team_id: '',
+            match_id: matchId
+        }]);
+    };
+
+    const updateAchievement = (id: number, field: string, value: any) => {
+        setAchievements(prev => prev.map(achievement =>
+            achievement.id === id ? { ...achievement, [field]: value } : achievement
+        ));
+    };
+
+    const removeAchievement = (id: number) => {
+        setAchievements(prev => prev.filter(achievement => achievement.id !== id));
+    };
+
+    const handleSave = async () => {
+        try {
+            // 保存比赛结果
+            for (const result of results) {
+                await supabase
+                    .from('match_team_results')
+                    .upsert({
+                        match_id: matchId,
+                        team_id: result.team_id,
+                        rank: result.rank,
+                        is_winner: result.rank === 1
+                    });
+            }
+
+            // 保存用户荣誉 - 需要将用户名转换为用户ID
+            for (const achievement of achievements) {
+                if (achievement.user_id && achievement.title) {
+                    // 如果user_id是用户名（captain_name），需要找到对应的用户ID
+                    let actualUserId = achievement.user_id;
+
+                    // 如果是队长（通过用户名匹配），需要找到真实的用户ID
+                    if (achievement.user_id.includes && !achievement.user_id.includes('@')) {
+                        // 这是一个用户名，需要找到对应的用户ID
+                        const team = teams.find(t => t.captain_name === achievement.user_id);
+                        if (team && team.captain_id) {
+                            actualUserId = team.captain_id;
+                        } else {
+                            // 如果找不到captain_id，尝试从players中查找
+                            for (const team of teams) {
+                                if (team.players) {
+                                    const player = team.players.find(p => p.name === achievement.user_id);
+                                    if (player) {
+                                        actualUserId = player.user_id;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    await supabase
+                        .from('user_achievements')
+                        .insert({
+                            user_id: actualUserId,
+                            match_id: matchId,
+                            team_id: achievement.team_id,
+                            achievement_type: achievement.achievement_type,
+                            title: achievement.title,
+                            description: achievement.description
+                        });
+                }
+            }
+
+            alert('比赛结果已保存！');
+            onSave();
+            onClose();
+        } catch (error) {
+            console.error('保存失败:', error);
+            alert('保存失败，请重试');
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-soft-lg border-2 border-cyan-100">
+                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700 mb-6">记录比赛结果</h2>
+
+                {/* 队伍排名 */}
+                <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">队伍排名</h3>
+                    <div className="space-y-3">
+                        {results.map((result, index) => (
+                            <div key={result.team_id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                                <div className="w-8 h-8 bg-cyan-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                                    {index + 1}
+                                </div>
+                                <div className="flex-1">
+                                    <span className="font-medium text-gray-800">{result.team_name}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-sm text-gray-600">排名:</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max={teams.length}
+                                        value={result.rank || ''}
+                                        onChange={(e) => updateResult(result.team_id, 'rank', parseInt(e.target.value) || 0)}
+                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm"
+                                        placeholder="名次"
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 用户荣誉 */}
+                <div className="mb-8">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-gray-800">颁发荣誉</h3>
+                        <button
+                            onClick={addAchievement}
+                            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm rounded-xl hover:shadow-soft transition-all duration-300"
+                        >
+                            + 添加荣誉
+                        </button>
+                    </div>
+                    <div className="space-y-3">
+                        {achievements.map((achievement) => (
+                            <div key={achievement.id} className="p-4 bg-green-50 rounded-xl border-2 border-green-200">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">获得者</label>
+                                        <select
+                                            value={achievement.user_id}
+                                            onChange={(e) => updateAchievement(achievement.id, 'user_id', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                        >
+                                            <option value="">选择用户</option>
+                                            {teams.flatMap(team => {
+                                                const users = [];
+                                                // 添加队长 - 使用真实的用户ID
+                                                if (team.captain_name) {
+                                                    // 查找队长的真实用户ID
+                                                    const captainUser = availableUsers?.find(u => u.username === team.captain_name);
+                                                    users.push({
+                                                        user_id: captainUser?.id || team.captain_name, // 如果找不到用captain_name作为fallback
+                                                        name: team.captain_name,
+                                                        role: '队长'
+                                                    });
+                                                }
+                                                // 添加队员
+                                                if (team.players && Array.isArray(team.players)) {
+                                                    team.players.forEach(player => {
+                                                        users.push({
+                                                            ...player,
+                                                            role: '队员'
+                                                        });
+                                                    });
+                                                }
+                                                return users;
+                                            }).map((user: any) => (
+                                                <option key={`${user.user_id}-${user.name}`} value={user.user_id}>
+                                                    {user.name} ({user.role})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="mb-3">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">荣誉称号</label>
+                                    <input
+                                        type="text"
+                                        value={achievement.title}
+                                        onChange={(e) => updateAchievement(achievement.id, 'title', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                        placeholder="例如：冠军、MVP等"
+                                    />
+                                </div>
+                                <div className="mb-3">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">详细描述</label>
+                                    <textarea
+                                        value={achievement.description}
+                                        onChange={(e) => updateAchievement(achievement.id, 'description', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                        rows={2}
+                                        placeholder="荣誉的详细描述..."
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => removeAchievement(achievement.id)}
+                                    className="text-red-500 hover:text-red-700 text-sm font-medium"
+                                >
+                                    删除此荣誉
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition-colors"
+                    >
+                        取消
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:shadow-soft transition-all duration-300"
+                    >
+                        保存结果
                     </button>
                 </div>
             </div>
