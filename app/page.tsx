@@ -164,7 +164,7 @@ export default function Home() {
         <div 
           className="absolute -top-5 -left-10 opacity-15 sm:opacity-20 md:opacity-25"
           style={{
-            width: '35vw',
+            width: '70vw',
             maxWidth: '500px',
             transform: `translate(${mousePosition.x * -0.04}px, ${mousePosition.y * -0.03}px)`,
             transition: 'transform 0.3s ease-out',
@@ -187,7 +187,7 @@ export default function Home() {
         <div 
           className="absolute -top-5 -right-10 opacity-15 sm:opacity-20 md:opacity-25"
           style={{
-            width: '40vw',
+            width: '70vw',
             maxWidth: '600px',
             transform: `translate(${mousePosition.x * 0.04}px, ${mousePosition.y * -0.03}px)`,
             transition: 'transform 0.3s ease-out',
@@ -210,7 +210,7 @@ export default function Home() {
         <div 
           className="absolute -bottom-28 -left-10 opacity-15 sm:opacity-20 md:opacity-25"
           style={{
-            width: '30vw',
+            width: '65vw',
             maxWidth: '450px',
             transform: `translate(${mousePosition.x * -0.03}px, ${mousePosition.y * 0.04}px)`,
             transition: 'transform 0.3s ease-out',
@@ -233,7 +233,7 @@ export default function Home() {
         <div 
           className="absolute -bottom-40 -right-10 opacity-15 sm:opacity-20 md:opacity-25"
           style={{
-            width: '35vw',
+            width: '70vw',
             maxWidth: '550px',
             transform: `translate(${mousePosition.x * 0.03}px, ${mousePosition.y * 0.04}px)`,
             transition: 'transform 0.3s ease-out',
