@@ -311,7 +311,7 @@ export default function Home() {
               </div>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-pink-500 to-pink-400 mb-6 leading-tight drop-shadow-lg">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-amber-500 to-pink-400 mb-6 leading-tight drop-shadow-lg">
               Weekly Volleyball Cup
             </h1>
 
@@ -327,7 +327,7 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4">
                   <Link
                       href="/timeline"
-                      className="group relative overflow-hidden bg-pink-300   text-white px-10 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl hover:scale-105 transition-all duration-300 w-full sm:w-auto border border-white/50"
+                      className="group relative overflow-hidden bg-pink-400   text-white px-10 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl hover:scale-105 transition-all duration-300 w-full sm:w-auto border border-white/50"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r  opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <span className="relative z-10 flex items-center justify-center gap-2">
@@ -340,7 +340,7 @@ export default function Home() {
                   <button
                       onClick={fetchUsers}
                       disabled={loading}
-                      className="group relative overflow-hidden bg-white/95 text-pink-600 px-10 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl hover:scale-105 transition-all duration-300 disabled:opacity-50 w-full sm:w-auto border-2 border-pink-200"
+                      className="group relative overflow-hidden bg-white/95 text-pink-500 px-10 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl hover:scale-105 transition-all duration-300 disabled:opacity-50 w-full sm:w-auto border-2 border-pink-200"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-pink-50 to-amber-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <span className="relative z-10 flex items-center justify-center gap-2">
