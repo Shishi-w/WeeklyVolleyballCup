@@ -65,7 +65,6 @@ export default function MatchDetailPage() {
     const [theme, setTheme] = useState<Theme | null>(null);
     const [rule, setRule] = useState<Rule | null>(null);
     const [result, setResult] = useState<Result | null>(null);
-    const [records, setRecords] = useState<Record[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingTheme, setEditingTheme] = useState(false);
@@ -81,15 +80,19 @@ export default function MatchDetailPage() {
     const [newRecordCaption, setNewRecordCaption] = useState('');
     const [editingTeam, setEditingTeam] = useState<Team | null>(null);
     const [editingRecord, setEditingRecord] = useState<Record | null>(null);
-    const [viewingComments, setViewingComments] = useState<string | null>(null);
+    const [viewingComments, setViewingComments] = useState<number | null>(null);
     const [newComment, setNewComment] = useState('');
-
     const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+    const [viewingImage, setViewingImage] = useState<string | null>(null);
+    const [records, setRecords] = useState<any[]>([]);
 
     useEffect(() => {
         checkAuth();
         fetchData();
     }, [matchId]);
+
+
+
 
 
     const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -994,7 +997,12 @@ export default function MatchDetailPage() {
                                                 </button>
                                             </>
                                         )}
-                                        <div className="relative w-full h-40 sm:h-48 bg-cyan-100">
+
+
+                                        <div
+                                            className="relative w-full h-40 sm:h-48 bg-cyan-100 cursor-zoom-in"
+                                            onClick={() => setViewingImage(getOptimizedImageUrl(record.image_url))}
+                                        >
                                             <Image
                                                 src={getOptimizedImageUrl(record.image_url, 800, 75)}
                                                 alt={record.caption || '赛事记录'}
@@ -1006,6 +1014,8 @@ export default function MatchDetailPage() {
                                                 blurDataURL={getBlurPlaceholder()}
                                             />
                                         </div>
+
+
                                         {record.caption && (
                                             <div className="p-2 sm:p-3">
                                                 <p className="text-gray-700 text-xs sm:text-sm leading-relaxed">{record.caption}</p>
@@ -1044,7 +1054,7 @@ export default function MatchDetailPage() {
                                                     {/* 评论列表 */}
                                                     {record.comments && record.comments.length > 0 ? (
                                                         <div className="max-h-32 overflow-y-auto space-y-1.5 mb-2">
-                                                            {record.comments.map((comment, idx) => (
+                                                            {record.comments.map((comment: string, idx: number) => (
                                                                 <div key={idx} className="text-xs bg-white rounded-lg p-2 border border-cyan-100">
                                                                     <p className="text-gray-700">{comment}</p>
                                                                 </div>
@@ -1085,6 +1095,52 @@ export default function MatchDetailPage() {
 
 
 
+            </div>
+            {/* 图片查看器 */}
+            {viewingImage && (
+                <ImageLightbox
+                    imageUrl={viewingImage}
+                    onClose={() => setViewingImage(null)}
+                />
+            )}
+
+
+
+
+        </div>
+
+
+
+
+    );
+}
+
+
+// 图片查看器组件
+function ImageLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () => void }) {
+    return (
+        <div
+            className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={onClose}
+        >
+            <button
+                onClick={onClose}
+                className="absolute top-4 right-4 text-white/80 hover:text-white text-4xl font-bold z-10"
+            >
+                ×
+            </button>
+            <div
+                className="max-w-full max-h-full relative"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <Image
+                    src={imageUrl}
+                    alt="查看大图"
+                    width={1200}
+                    height={800}
+                    className="max-w-full max-h-[90vh] object-contain rounded-lg"
+                    unoptimized
+                />
             </div>
         </div>
     );
