@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/browser';
 import Link from 'next/link';
 import Image from 'next/image';
 import { VolleyballIcon, CalendarIcon, UsersIcon, FlowerIcon, LoadingIcon} from '@/components/Icons';
+import AnnouncementBoard from '@/components/AnnouncementBoard';
 
 type Profile = {
   id: string;
@@ -139,6 +140,8 @@ export default function Home() {
     }
   };
 
+  const isLoggedIn = !!currentUser;
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 6) return '好球好球';
@@ -164,7 +167,7 @@ export default function Home() {
           <div className="absolute inset-0 overflow-hidden">
               {/* 左侧上方人物 - 举手击球 */}
               <div
-                  className="absolute top-[1%] left-[-5%] opacity-12 sm:opacity-15 md:opacity-20"
+                  className="absolute top-[0%] left-[-5%] opacity-12 sm:opacity-15 md:opacity-20"
                   style={{
                       width: '55vw',
                       maxWidth: '400px',
@@ -185,7 +188,7 @@ export default function Home() {
 
               {/* 右侧上方人物 - 网前垫球 */}
               <div
-                  className="absolute top-[15%] right-[10%] opacity-12 sm:opacity-15 md:opacity-20"
+                  className="absolute top-[20%] right-[5%] opacity-12 sm:opacity-15 md:opacity-20"
                   style={{
                       width: '55vw',
                       maxWidth: '380px',
@@ -366,6 +369,10 @@ export default function Home() {
                   </button>
                 </div>
             )}
+              {/* 赛事公告栏 */}
+              <div className="mt-8 sm:mt-12">
+                  <AnnouncementBoard isLoggedIn={isLoggedIn} />
+              </div>
           </div>
 
           {/* User List Section - 改进版 */}
