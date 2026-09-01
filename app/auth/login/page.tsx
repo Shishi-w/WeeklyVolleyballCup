@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
-import { createClient } from '@/lib/supabase/browser'
+import { login } from '@/lib/actions/auth'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FlowerIcon, LoadingIcon } from '@/components/Icons'
 
@@ -25,28 +25,17 @@ function LoginForm() {
         setError('')
         
         try {
-            const supabase = createClient()
-            
-            const { error } = await supabase.auth.signInWithPassword({
-                email: email.trim(),
-                password
-            })
-            
-            if (error) throw error
-            
+            const result = await login(email, password)
+
+            if (!result.ok) {
+                setError(result.error || '登录失败，请稍后重试')
+                return
+            }
+
             window.location.href = callbackUrl
         } catch (err: any) {
             console.error('登录错误:', err)
-            
-            if (err.message?.includes('Email not confirmed')) {
-                setError('账户尚未验证')
-            } else if (err.message?.includes('Invalid login credentials')) {
-                setError('邮箱或密码错误')
-            } else if (err.message?.includes('User not found')) {
-                setError('该用户不存在')
-            } else {
-                setError(err.message || '登录失败，请稍后重试')
-            }
+            setError(err.message || '登录失败，请稍后重试')
         } finally {
             setLoading(false)
         }

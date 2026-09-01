@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/browser';
 import { useRouter } from 'next/navigation';
+import { getCurrentUser, logout } from '@/lib/actions/auth';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -13,37 +13,27 @@ export default function Navbar() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
-    
-    const supabase = createClient();
-    
-    // 监听认证状态变化
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, !!session);
-      setIsLoggedIn(!!session);
-      setLoading(false);
-    });
+    let cancelled = false;
 
-    return () => {
-      subscription.unsubscribe();
+    const checkAuth = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (!cancelled) setIsLoggedIn(!!user);
+      } catch (error) {
+        if (!cancelled) setIsLoggedIn(false);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
-  }, []);
 
-  const checkAuth = async () => {
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsLoggedIn(!!user);
-    } catch (error) {
-      setIsLoggedIn(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+    checkAuth();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await logout();
     setIsLoggedIn(false);
     router.push('/');
     router.refresh();

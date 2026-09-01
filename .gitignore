@@ -24,6 +24,9 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Migration backup (Supabase image downloads, etc.)
+images-out/
+
 # Vercel
 .vercel
 

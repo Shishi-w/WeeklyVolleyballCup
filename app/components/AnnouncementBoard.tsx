@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/browser';
+import {
+  listAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
+} from '@/lib/actions/announcements';
 
 type Announcement = {
   id: string;
@@ -53,7 +58,6 @@ export default function AnnouncementBoard({ isLoggedIn }: AnnouncementBoardProps
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     fetchAnnouncements();
@@ -61,12 +65,7 @@ export default function AnnouncementBoard({ isLoggedIn }: AnnouncementBoardProps
 
   const fetchAnnouncements = async () => {
     try {
-      const { data, error } = await supabase
-        .from('announcements')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
+      const data = await listAnnouncements();
       setAnnouncements(data || []);
     } catch (error) {
       console.error('获取公告失败:', error);
@@ -77,30 +76,22 @@ export default function AnnouncementBoard({ isLoggedIn }: AnnouncementBoardProps
 
   const handleSaveAnnouncement = async (announcement: Partial<Announcement>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const input = {
+        title: announcement.title!,
+        content: announcement.content!,
+        color: announcement.color!,
+        pattern: announcement.pattern!,
+        rotation: announcement.rotation!,
+        position_x: announcement.position_x!,
+        position_y: announcement.position_y!,
+      };
 
       if (editingId) {
-        const { error } = await supabase
-          .from('announcements')
-          .update({
-            ...announcement,
-            edited_by: user?.user_metadata?.username || user?.email || 'Anonymous',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', editingId);
-
-        if (error) throw error;
+        await updateAnnouncement(editingId, input);
         setEditingId(null);
         setShowAddModal(false);
       } else {
-        const { error } = await supabase
-          .from('announcements')
-          .insert([{
-            ...announcement,
-            edited_by: user?.user_metadata?.username || user?.email || 'Anonymous'
-          }]);
-
-        if (error) throw error;
+        await createAnnouncement(input);
         setShowAddModal(false);
       }
 
@@ -115,12 +106,7 @@ export default function AnnouncementBoard({ isLoggedIn }: AnnouncementBoardProps
     if (!confirm('确定要删除这条公告吗？')) return;
 
     try {
-      const { error } = await supabase
-        .from('announcements')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await deleteAnnouncement(id);
       fetchAnnouncements();
     } catch (error) {
       console.error('删除公告失败:', error);

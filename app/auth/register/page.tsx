@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/browser';
+import { register } from '@/lib/actions/auth';
 import { FlowerIcon, LoadingIcon } from '@/components/Icons';
 
 export default function RegisterPage() {
@@ -39,24 +39,13 @@ export default function RegisterPage() {
     }
 
     try {
-      const supabase = createClient();
-      
-      const { error, data } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username: username.trim(),
-          },
-        },
-      });
+      const result = await register(email, password, username);
 
-      if (error) {
-        console.error('注册错误详情:', error);
-        throw error;
+      if (!result.ok) {
+        setError(result.error || '注册失败，请稍后重试');
+        return;
       }
 
-      console.log('注册成功:', data);
       alert('注册成功！');
       router.push('/auth/login');
     } catch (err: any) {

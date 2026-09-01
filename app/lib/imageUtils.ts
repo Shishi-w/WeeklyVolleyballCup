@@ -1,20 +1,14 @@
 /**
- * 获取优化后的 Supabase 图片 URL
- * 添加查询参数以启用 CDN 缓存和优化
+ * 返回图片 URL。
+ * 图片缩放由 next/image 优化器自动处理，这里直接透传原始地址
+ * （兼容 COS / CDN 域名上的图片）。
  */
 export function getOptimizedImageUrl(
   originalUrl: string,
-  width: number = 800,
-  quality: number = 75
+  _width: number = 800,
+  _quality: number = 75
 ): string {
-  if (!originalUrl || !originalUrl.includes('supabase.co/storage/v1/object/public/')) {
-    return originalUrl;
-  }
-
-  // Supabase 支持通过查询参数优化图片
-  // 添加 width 和 quality 参数
-  const separator = originalUrl.includes('?') ? '&' : '?';
-  return `${originalUrl}${separator}width=${width}&quality=${quality}`;
+  return originalUrl;
 }
 
 /**

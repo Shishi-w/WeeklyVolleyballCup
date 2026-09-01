@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/browser';
+import { getCurrentUser } from '@/lib/actions/auth';
+import { getProfileById, countProfiles } from '@/lib/actions/profiles';
+import { listMatches } from '@/lib/actions/matches';
 import Link from 'next/link';
 import { VolleyballIcon, CalendarIcon, UsersIcon } from '@/components/Icons';
 import AnnouncementBoard from '@/components/AnnouncementBoard';
@@ -28,7 +30,6 @@ export default function Home() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseRef = useRef({ x: 0, y: 0 });
-  const supabase = createClient();
 
   useEffect(() => {
     checkUser();
@@ -52,18 +53,11 @@ export default function Home() {
 
   const checkUser = async () => {
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) {
-        return;
-      }
+      const user = await getCurrentUser();
       if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        if (data) {
-          setCurrentUser(data);
+        const profile = await getProfileById(user.id);
+        if (profile) {
+          setCurrentUser(profile);
         }
       }
     } catch (error) {
@@ -73,15 +67,13 @@ export default function Home() {
 
   const fetchStats = async () => {
     try {
-      const { data: matches } = await supabase
-        .from('matches_with_status')
-        .select('id, name, start_date, end_date, status');
+      const matches = await listMatches('all');
 
       if (matches) {
         const totalMatches = matches.length;
         const ongoingMatches = matches.filter(m => m.status === 'ongoing').length;
         const upcomingMatch = matches.find(m => m.status === 'upcoming');
-        
+
         let countdown;
         if (upcomingMatch) {
           const now = new Date();
@@ -92,9 +84,7 @@ export default function Home() {
           countdown = `${days}天 ${hours}小时`;
         }
 
-        const { count: playerCount } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true });
+        const playerCount = await countProfiles();
 
         setStats({
           totalMatches,

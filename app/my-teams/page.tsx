@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/browser';
+import { getCurrentUser } from '@/lib/actions/auth';
+import { listAllTeamsWithMatch, getTeamName } from '@/lib/actions/teams';
+import { listUserTeamResults } from '@/lib/actions/results';
+import { listUserAchievements } from '@/lib/actions/achievements';
+import { getProfileById } from '@/lib/actions/profiles';
 import Link from 'next/link';
 import { VolleyballIcon, LoadingIcon, UsersIcon, CalendarIcon } from '@/components/Icons';
 
@@ -46,7 +50,6 @@ export default function MyTeamsPage() {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'teams' | 'matches' | 'achievements'>('teams');
-  const supabase = createClient();
 
   useEffect(() => {
     checkUser();
@@ -55,8 +58,8 @@ export default function MyTeamsPage() {
 
   const checkUser = async () => {
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
+      const user = await getCurrentUser();
+      if (!user) {
         window.location.href = '/auth/login?callbackUrl=/my-teams';
         return;
       }
@@ -68,28 +71,17 @@ export default function MyTeamsPage() {
 
   const fetchData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
-      // 获取用户加入的队伍 - 从teams表中查询players数组包含当前用户的队伍
-      const { data: teamsData, error: teamsError } = await supabase
-        .from('teams')
-        .select(`
-          *,
-          matches:match_id (
-            id,
-            name
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (teamsError) throw teamsError;
+      // 获取用户加入的队伍
+      const teamsData = await listAllTeamsWithMatch();
 
       let userTeams: any[] = [];
       if (teamsData) {
         // 过滤出包含当前用户的队伍
         userTeams = teamsData.filter((team: any) => {
-          if (team.captain_name === user.user_metadata?.username) {
+          if (team.captain_name === user.username) {
             return true; // 用户是队长
           }
           if (team.players && Array.isArray(team.players)) {
@@ -99,13 +91,11 @@ export default function MyTeamsPage() {
         });
 
         const formattedTeams: Team[] = userTeams.map((team: any) => {
-          // 确定用户在队伍中的位置
           let position = '队员';
-          if (team.captain_name === user.user_metadata?.username) {
+          if (team.captain_name === user.username) {
             position = '队长';
           }
 
-          // 找到用户的加入时间（这里简化处理，使用队伍创建时间）
           const joined_at = team.created_at;
 
           return {
@@ -128,30 +118,13 @@ export default function MyTeamsPage() {
       // 获取比赛结果 - 基于用户所在的队伍
       const userTeamIds = userTeams.map((team: any) => team.id);
       if (userTeamIds.length > 0) {
-        const { data: results, error: resultsError } = await supabase
-          .from('match_team_results')
-          .select(`
-            *,
-            matches:match_id (
-              id,
-              name,
-              start_date
-            ),
-            teams:team_id (
-              team_name
-            )
-          `)
-          .in('team_id', userTeamIds)
-          .order('created_at', { ascending: false });
-
-        if (resultsError) throw resultsError;
-
+        const results = await listUserTeamResults(userTeamIds);
         if (results) {
           const formattedResults: MatchResult[] = results.map((result: any) => ({
             id: result.id,
-            match_name: result.matches.name,
-            match_date: result.matches.start_date,
-            team_name: result.teams.team_name,
+            match_name: result.matches?.name,
+            match_date: result.matches?.start_date,
+            team_name: result.teams?.team_name,
             rank: result.rank,
             points: result.points,
             is_winner: result.is_winner
@@ -160,34 +133,51 @@ export default function MyTeamsPage() {
         }
       }
 
-      // 获取用户荣誉
-      const { data: userAchievements } = await supabase
-        .from('user_achievements')
-        .select(`
-          *,
-          matches:match_id (
-            name
-          ),
-          teams:team_id (
-            team_name
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('awarded_at', { ascending: false });
+      const achievementsData = await listUserAchievements(user.id);
 
-      if (userAchievements) {
-        const formattedAchievements: Achievement[] = userAchievements.map((achievement: any) => ({
-          id: achievement.id,
-          match_name: achievement.matches.name,
-          team_name: achievement.teams.team_name,
-          achievement_type: achievement.achievement_type,
-          title: achievement.title,
-          description: achievement.description,
-          awarded_at: achievement.awarded_at
-        }));
-        setAchievements(formattedAchievements);
+      if (achievementsData && achievementsData.length > 0) {
+        // 手动获取用户和队伍信息
+        const achievementsWithDetails = await Promise.all(
+          achievementsData.map(async (achievement: any) => {
+            let userName = '未知用户';
+            let teamName = null;
+
+            if (achievement.user_id) {
+              try {
+                const userData = await getProfileById(achievement.user_id);
+                if (userData) {
+                  userName = userData.username || userData.full_name || '未知用户';
+                } else {
+                  console.warn(`未找到用户 ${achievement.user_id} 的 profiles 记录`);
+                }
+              } catch (err) {
+                console.warn(`获取用户 ${achievement.user_id} 信息失败:`, err);
+              }
+            }
+
+            if (achievement.team_id) {
+              try {
+                const name = await getTeamName(achievement.team_id);
+                if (name) {
+                  teamName = name;
+                }
+              } catch (err) {
+                console.warn(`获取队伍 ${achievement.team_id} 信息失败:`, err);
+              }
+            }
+
+            return {
+              ...achievement,
+              user_name: userName,
+              teams: teamName ? { team_name: teamName } : null
+            };
+          })
+        );
+
+        setAchievements(achievementsWithDetails);
+      } else {
+        setAchievements([]);
       }
-
     } catch (error) {
       console.error('获取数据失败:', error);
     } finally {

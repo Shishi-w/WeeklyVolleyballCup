@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/browser';
+import { getCurrentUser } from '@/lib/actions/auth';
+import { getProfileById, listProfiles } from '@/lib/actions/profiles';
 import Link from 'next/link';
 import { UsersIcon, FlowerIcon, LoadingIcon } from '@/components/Icons';
 
@@ -15,7 +16,6 @@ export default function UsersPage() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<Profile | null>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     checkUser();
@@ -24,18 +24,11 @@ export default function UsersPage() {
 
   const checkUser = async () => {
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) {
-        return;
-      }
+      const user = await getCurrentUser();
       if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        if (data) {
-          setCurrentUser(data);
+        const profile = await getProfileById(user.id);
+        if (profile) {
+          setCurrentUser(profile);
         }
       }
     } catch (error) {
@@ -46,18 +39,14 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
 
-      if (userError) {
+      if (!user) {
         alert('请先登录');
         return;
       }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*');
-
-      if (error) throw error;
+      const data = await listProfiles();
       setUsers(data || []);
     } catch (error) {
       console.error('获取用户列表失败:', error);

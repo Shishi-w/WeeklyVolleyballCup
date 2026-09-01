@@ -1,12 +1,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/browser';
+import { getCurrentUser } from '@/lib/actions/auth';
+import { getMatchById } from '@/lib/actions/matches';
+import { listMatchTeams, createTeam, updateTeam, deleteTeam } from '@/lib/actions/teams';
+import {
+  getLatestTheme,
+  saveTheme,
+  getRule,
+  saveRule,
+  getResult,
+  saveResult,
+} from '@/lib/actions/matchContent';
+import {
+  listRecords,
+  createRecord,
+  deleteRecord,
+  updateCaption,
+  addComment,
+} from '@/lib/actions/records';
+import {
+  listTeamResultsByMatch,
+  getExistingTeamResults,
+  upsertTeamResults,
+} from '@/lib/actions/results';
+import {
+  listMatchAchievements,
+  upsertAchievement,
+  deleteAchievement,
+} from '@/lib/actions/achievements';
+import { listProfileSelect, getProfileById } from '@/lib/actions/profiles';
+import { uploadImage } from '@/lib/actions/upload';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getOptimizedImageUrl, getBlurPlaceholder } from '@/lib/imageUtils';
 import { VolleyballIcon, LoadingIcon, FlowerIcon } from '@/components/Icons';
+import type { Team, TeamPlayer } from '@/lib/types';
 
 type Match = {
     id: string;
@@ -47,20 +77,9 @@ type Record = {
     comments?: string[];
 };
 
-type Team = {
-    id: string;
-    team_name: string;
-    captain_name: string;
-    captain_id?: string;
-    captain_contact: string;
-    players: { user_id: string; name: string; position?: string }[];
-    expected_position: string;
-};
-
 export default function MatchDetailPage() {
     const params = useParams();
     const matchId = params.id as string;
-    const supabase = createClient();
 
     const [match, setMatch] = useState<Match | null>(null);
     const [theme, setTheme] = useState<Theme | null>(null);
@@ -95,7 +114,61 @@ export default function MatchDetailPage() {
         fetchData();
     }, [matchId]);
 
+    const fetchData = async () => {
+        try {
+            const matchData = await getMatchById(matchId);
+            if (!matchData) throw new Error('赛事不存在');
+            setMatch(matchData);
 
+            const themeData = await getLatestTheme(matchId);
+            setTheme(themeData);
+            if (themeData) setThemeContent(themeData.content);
+
+            const ruleData = await getRule(matchId);
+            setRule(ruleData);
+            if (ruleData) setRuleContent(ruleData.content);
+
+            const resultData = await getResult(matchId);
+            setResult(resultData);
+            if (resultData) setResultContent(resultData.content);
+
+            const recordsData = await listRecords(matchId);
+            setRecords(recordsData || []);
+
+            const teamsData = await listMatchTeams(matchId);
+            setTeams(teamsData || []);
+
+            const teamResultsData = await listTeamResultsByMatch(matchId);
+            setMatchResults(teamResultsData || []);
+
+            const achievementsData = await listMatchAchievements(matchId);
+
+            // 手动获取用户信息
+            const achievementsWithUsers = await Promise.all(
+                (achievementsData || []).map(async (achievement: any) => {
+                    let userName = '未知用户';
+
+                    if (achievement.user_id) {
+                        const userData = await getProfileById(achievement.user_id);
+                        if (userData) {
+                            userName = userData.username || userData.full_name || '未知用户';
+                        }
+                    }
+
+                    return {
+                        ...achievement,
+                        user_name: userName
+                    };
+                })
+            );
+
+            setUserAchievements(achievementsWithUsers);
+        } catch (error) {
+            console.error('获取数据失败:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
 
 
@@ -119,40 +192,23 @@ export default function MatchDetailPage() {
         setUploadProgress({ current: 0, total: validFiles.length });
 
         try {
-            const { data: { user } } = await supabase.auth.getUser();
             let successCount = 0;
 
             for (let i = 0; i < validFiles.length; i++) {
                 const file = validFiles[i];
                 if (!file) continue;
 
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${matchId}-${Date.now()}-${i}.${fileExt}`;
-
                 try {
-                    const { error: uploadError } = await supabase.storage
-                        .from('match-images')
-                        .upload(fileName, file);
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('matchId', matchId);
 
-                    if (uploadError) throw uploadError;
-
-                    const { data: { publicUrl } } = supabase.storage
-                        .from('match-images')
-                        .getPublicUrl(fileName);
-
-                    const recordData = {
+                    const { url } = await uploadImage(formData);
+                    await createRecord({
                         match_id: matchId,
-                        image_url: publicUrl,
+                        image_url: url,
                         caption: newRecordCaption || '',
-                        edited_by: user?.email || 'Anonymous',
-                        edited_by_username: user?.user_metadata?.username || '匿名用户',
-                    };
-
-                    const { error: insertError } = await supabase
-                        .from('match_records')
-                        .insert([recordData]);
-
-                    if (insertError) throw insertError;
+                    });
 
                     successCount++;
                     setUploadProgress({ current: i + 1, total: validFiles.length });
@@ -176,7 +232,7 @@ export default function MatchDetailPage() {
 
     const checkAuth = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const user = await getCurrentUser();
             setIsLoggedIn(!!user);
             setUserId(user?.id || null);
         } catch (error) {
@@ -185,72 +241,6 @@ export default function MatchDetailPage() {
         }
     };
 
-    const fetchData = async () => {
-        try {
-            const { data: matchData, error: matchError } = await supabase
-                .from('matches_with_status')
-                .select('*')
-                .eq('id', matchId)
-                .single();
-
-            if (matchError) throw matchError;
-            setMatch(matchData);
-
-            const { data: themeData, error: themeError } = await supabase
-                .from('match_themes')
-                .select('*')
-                .eq('match_id', matchId)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            if (themeError) throw themeError;
-            setTheme(themeData);
-            if (themeData) setThemeContent(themeData.content);
-
-            const { data: ruleData, error: ruleError } = await supabase
-                .from('match_rules')
-                .select('*')
-                .eq('match_id', matchId)
-                .maybeSingle();
-
-            if (ruleError) throw ruleError;
-            setRule(ruleData);
-            if (ruleData) setRuleContent(ruleData.content);
-
-            const { data: resultData, error: resultError } = await supabase
-                .from('match_results')
-                .select('*')
-                .eq('match_id', matchId)
-                .maybeSingle();
-
-            if (resultError) throw resultError;
-            setResult(resultData);
-            if (resultData) setResultContent(resultData.content);
-
-            const { data: recordsData, error: recordsError } = await supabase
-                .from('match_records')
-                .select('*')
-                .eq('match_id', matchId)
-                .order('created_at', { ascending: false });
-
-            if (recordsError) throw recordsError;
-            setRecords(recordsData || []);
-
-            const { data: teamsData, error: teamsError } = await supabase
-                .from('teams')
-                .select('*')
-                .eq('match_id', matchId)
-                .order('created_at', { ascending: true });
-
-            if (teamsError) throw teamsError;
-            setTeams(teamsData || []);
-        } catch (error) {
-            console.error('获取数据失败:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const canEdit = isLoggedIn ;
 
@@ -270,27 +260,7 @@ export default function MatchDetailPage() {
         }
 
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-
-            const themeData = {
-                match_id: matchId,
-                content: themeContent,
-                edited_by: user?.email || 'Anonymous',
-                edited_by_username: user?.user_metadata?.username || '匿名用户',
-            };
-
-            if (theme) {
-                const { error } = await supabase
-                    .from('match_themes')
-                    .update(themeData)
-                    .eq('id', theme.id);
-                if (error) throw error;
-            } else {
-                const { error } = await supabase
-                    .from('match_themes')
-                    .insert([themeData]);
-                if (error) throw error;
-            }
+            await saveTheme({ matchId, id: theme?.id ?? null, content: themeContent });
 
             setEditingTheme(false);
             fetchData();
@@ -308,27 +278,7 @@ export default function MatchDetailPage() {
         }
 
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-
-            const ruleData = {
-                match_id: matchId,
-                content: ruleContent,
-                edited_by: user?.email || 'Anonymous',
-                edited_by_username: user?.user_metadata?.username || '匿名用户',
-            };
-
-            if (rule) {
-                const { error } = await supabase
-                    .from('match_rules')
-                    .update(ruleData)
-                    .eq('id', rule.id);
-                if (error) throw error;
-            } else {
-                const { error } = await supabase
-                    .from('match_rules')
-                    .insert([ruleData]);
-                if (error) throw error;
-            }
+            await saveRule({ matchId, id: rule?.id ?? null, content: ruleContent });
 
             setEditingRule(false);
             fetchData();
@@ -346,27 +296,7 @@ export default function MatchDetailPage() {
         }
 
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-
-            const resultData = {
-                match_id: matchId,
-                content: resultContent,
-                edited_by: user?.email || 'Anonymous',
-                edited_by_username: user?.user_metadata?.username || '匿名用户',
-            };
-
-            if (result) {
-                const { error } = await supabase
-                    .from('match_results')
-                    .update(resultData)
-                    .eq('id', result.id);
-                if (error) throw error;
-            } else {
-                const { error } = await supabase
-                    .from('match_results')
-                    .insert([resultData]);
-                if (error) throw error;
-            }
+            await saveResult({ matchId, id: result?.id ?? null, content: resultContent });
 
             setEditingResult(false);
             fetchData();
@@ -388,12 +318,7 @@ export default function MatchDetailPage() {
         if (!confirm('确定要删除这条记录吗？')) return;
 
         try {
-            const { error } = await supabase
-                .from('match_records')
-                .delete()
-                .eq('id', recordId);
-
-            if (error) throw error;
+            await deleteRecord(recordId);
 
             fetchData();
             alert('记录已删除');
@@ -414,16 +339,12 @@ export default function MatchDetailPage() {
         }
 
         try {
-            const { error } = await supabase
-                .from('teams')
-                .insert([{ 
-                    team_name: teamData.team_name,
-                    captain_name: teamData.captain_name,
-                    players: teamData.players,
-                    match_id: matchId 
-                }]);
-
-            if (error) throw error;
+            await createTeam({
+                team_name: teamData.team_name,
+                captain_name: teamData.captain_name,
+                players: teamData.players,
+                match_id: matchId,
+            });
 
             setShowAddTeam(false);
             fetchData();
@@ -448,12 +369,7 @@ export default function MatchDetailPage() {
     if (!confirm('确定要删除这支队伍吗？')) return;
 
     try {
-        const { error } = await supabase
-            .from('teams')
-            .delete()
-            .eq('id', teamId);
-
-        if (error) throw error;
+        await deleteTeam(teamId);
 
         fetchData();
         alert('队伍已删除');
@@ -474,16 +390,11 @@ export default function MatchDetailPage() {
         }
 
         try {
-            const { error } = await supabase
-                .from('teams')
-                .update({
-                    team_name: teamData.team_name,
-                    captain_name: teamData.captain_name,
-                    players: teamData.players,
-                })
-                .eq('id', editingTeam.id);
-
-            if (error) throw error;
+            await updateTeam(editingTeam.id, {
+                team_name: teamData.team_name,
+                captain_name: teamData.captain_name,
+                players: teamData.players,
+            });
 
             setEditingTeam(null);
             fetchData();
@@ -501,19 +412,7 @@ export default function MatchDetailPage() {
         }
 
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-
-            const { error } = await supabase
-                .from('match_records')
-                .update({
-                    caption: newCaption,
-                    edited_by: user?.email || 'Anonymous',
-                    edited_by_username: user?.user_metadata?.username || '匿名用户',
-                    updated_at: new Date().toISOString(),
-                })
-                .eq('id', recordId);
-
-            if (error) throw error;
+            await updateCaption(recordId, newCaption);
 
             setEditingRecord(null);
             fetchData();
@@ -536,19 +435,10 @@ export default function MatchDetailPage() {
         }
 
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            const record = records.find(r => r.id === recordId);
-            const currentComments = record?.comments || [];
-            const commentWithAuthor = `${user?.user_metadata?.username || '匿名用户'}: ${newComment}`;
+            const user = await getCurrentUser();
+            const commentWithAuthor = `${user?.username || '匿名用户'}: ${newComment}`;
 
-            const { error } = await supabase
-                .from('match_records')
-                .update({
-                    comments: [...currentComments, commentWithAuthor],
-                })
-                .eq('id', recordId);
-
-            if (error) throw error;
+            await addComment(recordId, commentWithAuthor);
 
             setNewComment('');
             fetchData();
@@ -856,26 +746,110 @@ export default function MatchDetailPage() {
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft-lg p-4 sm:p-6 mt-6 sm:mt-8 border-2 border-cyan-100">
                     <h2 className="text-lg sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700 mb-4 sm:mb-6">赛事结果与记录</h2>
 
-                    {/* Results */}
-                    <div className="mb-6 sm:mb-8 pb-6 sm:pb-8 border-b border-cyan-100 last:border-0 last:pb-0 last:mb-0">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
-                            <h3 className="text-base sm:text-xl font-semibold text-cyan-800">赛事结果公示</h3>
-                            {isLoggedIn ? (
-                                <button
-                                    onClick={() => setEditingResult(!editingResult)}
-                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto"
-                                >
-                                    {editingResult ? '取消编辑' : '编辑结果'}
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleRedirectToLogin}
-                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors w-full sm:w-auto cursor-not-allowed"
-                                >
-                                    🔒 登录后可编辑
-                                </button>
-                            )}
+                        {/* Match Results Display */}
+                        {matchResults.length > 0 && (
+                            <div className="mb-8 pb-8 border-b border-cyan-100">
+                                <h3 className="text-base sm:text-xl font-semibold text-cyan-800 mb-4">🏆 队伍排名</h3>
+                                <div className="space-y-3">
+                                    {matchResults.map((result, index) => (
+                                        <div
+                                            key={result.id}
+                                            className={`p-4 rounded-xl border-2 ${
+                                                result.is_winner
+                                                    ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-300'
+                                                    : 'bg-gray-50 border-gray-200'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+                                                        index === 0 ? 'bg-yellow-500' :
+                                                            index === 1 ? 'bg-gray-400' :
+                                                                index === 2 ? 'bg-orange-600' :
+                                                                    'bg-cyan-500'
+                                                    }`}>
+                                                        {result.rank}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-800 text-lg">{result.teams?.team_name}</p>
+                                                        {result.is_winner && (
+                                                            <p className="text-sm text-yellow-600 font-medium">🎉 冠军队伍</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-2xl font-bold text-cyan-600">第{result.rank}名</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+
+                    {/* User Achievements Display */}
+                    {userAchievements.length > 0 && (
+                        <div className="mb-8 pb-8 border-b border-cyan-100">
+                            <h3 className="text-base sm:text-xl font-semibold text-cyan-800 mb-4">⭐ 个人荣誉</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {userAchievements.map((achievement) => (
+                                    <div
+                                        key={achievement.id}
+                                        className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200 hover:shadow-soft transition-all duration-300"
+                                    >
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div>
+                                                <p className="font-bold text-gray-800 text-lg">{achievement.title}</p>
+                                                <p className="text-sm text-gray-600">
+                                                    👤 {achievement.profiles?.user_name || '未知用户'}
+                                                </p>
+                                                {achievement.teams?.team_name && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        🏐 {achievement.teams.team_name}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <span className="text-2xl">
+                                                {achievement.achievement_type === 'mvp' ? '🌟' :
+                                                    achievement.achievement_type === 'best_player' ? '⭐' :
+                                                        achievement.achievement_type === 'best_scorer' ? '🔥' :
+                                                            '🎖️'}
+                                            </span>
+                                        </div>
+                                        {achievement.description && (
+                                            <p className="text-sm text-gray-700 mt-2 leading-relaxed">
+                                                {achievement.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
+                    )}
+
+
+                    {/* Results */}
+                        <div className="mb-6 sm:mb-8 pb-6 sm:pb-8 border-b border-cyan-100 last:border-0 last:pb-0 last:mb-0">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+                                <h3 className="text-base sm:text-xl font-semibold text-cyan-800">赛事结果公示</h3>
+                                {isLoggedIn ? (
+                                    <button
+                                        onClick={() => setEditingResult(!editingResult)}
+                                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto"
+                                    >
+                                        {editingResult ? '取消编辑' : '编辑结果'}
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleRedirectToLogin}
+                                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors w-full sm:w-auto cursor-not-allowed"
+                                    >
+                                        🔒 登录后可编辑
+                                    </button>
+                                )}
+                            </div>
+
 
                         {editingResult && isLoggedIn ? (
                             <div>
@@ -1175,7 +1149,6 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
     const [captainName, setCaptainName] = useState('');
     const [players, setPlayers] = useState<{ user_id: string; name: string; position?: string }[]>([]);
     const [availableUsers, setAvailableUsers] = useState<any[]>([]);
-    const supabase = createClient();
 
     useEffect(() => {
         fetchUsers();
@@ -1183,12 +1156,7 @@ function AddTeamModal({ onClose, onAdd }: { onClose: () => void; onAdd: (data: a
 
     const fetchUsers = async () => {
         try {
-            const { data: users, error } = await supabase
-                .from('profiles')
-                .select('id, username')
-                .order('username');
-
-            if (error) throw error;
+            const users = await listProfileSelect();
             setAvailableUsers(users || []);
         } catch (error) {
             console.error('获取用户列表失败:', error);
@@ -1329,9 +1297,8 @@ function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => v
     const [teamName, setTeamName] = useState(team.team_name);
     const [captainId, setCaptainId] = useState('');
     const [captainName, setCaptainName] = useState(team.captain_name);
-    const [players, setPlayers] = useState<{ user_id: string; name: string; position?: string }[]>(team.players || []);
+    const [players, setPlayers] = useState<TeamPlayer[]>(team.players || []);
     const [availableUsers, setAvailableUsers] = useState<any[]>([]);
-    const supabase = createClient();
 
     useEffect(() => {
         fetchUsers();
@@ -1339,12 +1306,7 @@ function EditTeamModal({ team, onClose, onEdit }: { team: Team; onClose: () => v
 
     const fetchUsers = async () => {
         try {
-            const { data: users, error } = await supabase
-                .from('profiles')
-                .select('id, username')
-                .order('username');
-
-            if (error) throw error;
+            const users = await listProfileSelect();
             setAvailableUsers(users || []);
 
             // 找到当前队长的ID
@@ -1540,31 +1502,54 @@ function RecordResultsModal({ matchId, teams, onClose, onSave }: { matchId: stri
     const [results, setResults] = useState<any[]>([]);
     const [achievements, setAchievements] = useState<any[]>([]);
     const [availableUsers, setAvailableUsers] = useState<any[]>([]);
-    const supabase = createClient();
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        // 初始化结果数据
-        const initialResults = teams.map(team => ({
-            team_id: team.id,
-            team_name: team.team_name,
-            rank: 0,
-            points: 0,
-            is_winner: false
-        }));
-        setResults(initialResults);
-
-        // 获取用户列表
+        fetchExistingData();
         fetchUsers();
-    }, [teams]);
+    }, [teams, matchId]);
+
+    const fetchExistingData = async () => {
+        try {
+            const existingResults = await getExistingTeamResults(matchId);
+
+            if (existingResults) {
+                const resultsWithTeamNames = teams.map(team => {
+                    const existing = existingResults.find(r => r.team_id === team.id);
+                    return {
+                        team_id: team.id,
+                        team_name: team.team_name,
+                        rank: existing?.rank || 0,
+                        is_winner: existing?.is_winner || false
+                    };
+                });
+                setResults(resultsWithTeamNames);
+            } else {
+                const initialResults = teams.map(team => ({
+                    team_id: team.id,
+                    team_name: team.team_name,
+                    rank: 0,
+                    is_winner: false
+                }));
+                setResults(initialResults);
+            }
+
+            const existingAchievements = await listMatchAchievements(matchId);
+
+            if (existingAchievements) {
+                setAchievements(existingAchievements.map((a, idx) => ({
+                    ...a,
+                    id: a.id || Date.now() + idx
+                })));
+            }
+        } catch (error) {
+            console.error('获取已有数据失败:', error);
+        }
+    };
 
     const fetchUsers = async () => {
         try {
-            const { data: users, error } = await supabase
-                .from('profiles')
-                .select('id, username')
-                .order('username');
-
-            if (error) throw error;
+            const users = await listProfileSelect();
             setAvailableUsers(users || []);
         } catch (error) {
             console.error('获取用户列表失败:', error);
@@ -1595,71 +1580,59 @@ function RecordResultsModal({ matchId, teams, onClose, onSave }: { matchId: stri
         ));
     };
 
-    const removeAchievement = (id: number) => {
+    const removeAchievement = async (id: number) => {
+        const achievement = achievements.find(a => a.id === id);
+        if (achievement && achievement.id && typeof achievement.id === 'string') {
+            try {
+                await deleteAchievement(achievement.id);
+            } catch (error) {
+                console.error('删除荣誉失败:', error);
+            }
+        }
         setAchievements(prev => prev.filter(achievement => achievement.id !== id));
     };
 
     const handleSave = async () => {
+        setSaving(true);
         try {
-            // 保存比赛结果
-            for (const result of results) {
-                await supabase
-                    .from('match_team_results')
-                    .upsert({
-                        match_id: matchId,
-                        team_id: result.team_id,
-                        rank: result.rank,
-                        is_winner: result.rank === 1
-                    });
+            const validResults = results.filter(r => r.rank > 0);
+
+            if (validResults.length > 0) {
+                await upsertTeamResults(
+                    matchId,
+                    validResults.map(r => ({
+                        team_id: r.team_id,
+                        rank: r.rank
+                    }))
+                );
             }
 
-            // 保存用户荣誉 - 需要将用户名转换为用户ID
-            for (const achievement of achievements) {
-                if (achievement.user_id && achievement.title) {
-                    // 如果user_id是用户名（captain_name），需要找到对应的用户ID
-                    let actualUserId = achievement.user_id;
+            const validAchievements = achievements.filter(a => a.user_id && a.title);
 
-                    // 如果是队长（通过用户名匹配），需要找到真实的用户ID
-                    if (achievement.user_id.includes && !achievement.user_id.includes('@')) {
-                        // 这是一个用户名，需要找到对应的用户ID
-                        const team = teams.find(t => t.captain_name === achievement.user_id);
-                        if (team && team.captain_id) {
-                            actualUserId = team.captain_id;
-                        } else {
-                            // 如果找不到captain_id，尝试从players中查找
-                            for (const team of teams) {
-                                if (team.players) {
-                                    const player = team.players.find(p => p.name === achievement.user_id);
-                                    if (player) {
-                                        actualUserId = player.user_id;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    await supabase
-                        .from('user_achievements')
-                        .insert({
-                            user_id: actualUserId,
-                            match_id: matchId,
-                            team_id: achievement.team_id,
-                            achievement_type: achievement.achievement_type,
-                            title: achievement.title,
-                            description: achievement.description
-                        });
-                }
+            for (const achievement of validAchievements) {
+                await upsertAchievement({
+                    id: achievement.id && typeof achievement.id === 'string' ? achievement.id : null,
+                    user_id: achievement.user_id,
+                    match_id: matchId,
+                    team_id: achievement.team_id || null,
+                    achievement_type: achievement.achievement_type || 'participation',
+                    title: achievement.title,
+                    description: achievement.description || ''
+                });
             }
 
             alert('比赛结果已保存！');
             onSave();
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error('保存失败:', error);
-            alert('保存失败，请重试');
+            alert('保存失败: ' + (error.message || '请重试'));
+        } finally {
+            setSaving(false);
         }
     };
+
+
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1712,40 +1685,35 @@ function RecordResultsModal({ matchId, teams, onClose, onSave }: { matchId: stri
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">获得者</label>
+
+
+
                                         <select
                                             value={achievement.user_id}
                                             onChange={(e) => updateAchievement(achievement.id, 'user_id', e.target.value)}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                         >
                                             <option value="">选择用户</option>
-                                            {teams.flatMap(team => {
-                                                const users = [];
-                                                // 添加队长 - 使用真实的用户ID
-                                                if (team.captain_name) {
-                                                    // 查找队长的真实用户ID
-                                                    const captainUser = availableUsers?.find(u => u.username === team.captain_name);
-                                                    users.push({
-                                                        user_id: captainUser?.id || team.captain_name, // 如果找不到用captain_name作为fallback
-                                                        name: team.captain_name,
-                                                        role: '队长'
-                                                    });
-                                                }
-                                                // 添加队员
-                                                if (team.players && Array.isArray(team.players)) {
-                                                    team.players.forEach(player => {
-                                                        users.push({
-                                                            ...player,
-                                                            role: '队员'
-                                                        });
-                                                    });
-                                                }
-                                                return users;
-                                            }).map((user: any) => (
-                                                <option key={`${user.user_id}-${user.name}`} value={user.user_id}>
-                                                    {user.name} ({user.role})
-                                                </option>
-                                            ))}
+                                            {availableUsers
+                                                .filter(user => user.id) // 只保留有 ID 的用户
+                                                .sort((a, b) => {
+                                                    const nameA = a.username || a.full_name || '';
+                                                    const nameB = b.username || b.full_name || '';
+                                                    return nameA.localeCompare(nameB, 'zh-CN');
+                                                })
+                                                .map((user) => {
+                                                    const displayName = user.username || user.full_name || '未知用户';
+                                                    return (
+                                                        <option key={user.id} value={user.id}>
+                                                            {displayName}
+                                                        </option>
+                                                    );
+                                                })}
                                         </select>
+
+
+
+
                                     </div>
                                 </div>
                                 <div className="mb-3">
@@ -1782,15 +1750,24 @@ function RecordResultsModal({ matchId, teams, onClose, onSave }: { matchId: stri
                 <div className="flex gap-2 justify-end">
                     <button
                         onClick={onClose}
-                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition-colors"
+                        disabled={saving}
+                        className="px-6 py-2 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition-colors disabled:opacity-50"
                     >
                         取消
                     </button>
                     <button
                         onClick={handleSave}
+                        disabled={saving}
                         className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:shadow-soft transition-all duration-300"
                     >
-                        保存结果
+                        {saving ? (
+                            <>
+                                <span className="animate-spin">⏳</span>
+                                保存中...
+                            </>
+                        ) : (
+                            '保存结果'
+                        )}
                     </button>
                 </div>
             </div>

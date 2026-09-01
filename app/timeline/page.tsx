@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/browser';
+import { listMatches } from '@/lib/actions/matches';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -20,7 +20,6 @@ export default function TimelinePage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [filter, setFilter] = useState<'all' | 'recent' | 'history'>('all');
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     fetchMatches();
@@ -33,31 +32,7 @@ export default function TimelinePage() {
 
   const fetchMatches = async () => {
     try {
-      let query = supabase
-        .from('matches_with_status')
-        .select('*')
-        .order('start_date', { ascending: false });
-
-      if (filter === 'recent') {
-        // 最近一周：开始时间 >= 7 天前 且 结束时间 <= 7 天后
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        
-        const sevenDaysLater = new Date();
-        sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
-        
-        query = query
-          .gte('start_date', sevenDaysAgo.toISOString())
-          .lte('end_date', sevenDaysLater.toISOString());
-          
-      } else if (filter === 'history') {
-        // 历史比赛：只显示已结束的赛事
-        query = query.eq('status', 'completed');
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
+      const data = await listMatches(filter);
       setMatches(data || []);
     } catch (error) {
       console.error('获取赛事失败:', error);
