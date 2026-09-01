@@ -16,7 +16,12 @@ export interface MatchInput {
 function validateMatchInput(input: MatchInput): void {
   if (!input.name?.trim()) throw new Error('周赛名称不能为空');
   if (!input.start_date || !input.end_date) throw new Error('请填写开始和结束时间');
-  if (new Date(input.end_date) <= new Date(input.start_date)) {
+  const start = new Date(input.start_date).getTime();
+  const end = new Date(input.end_date).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end)) {
+    throw new Error('时间格式不正确');
+  }
+  if (end <= start) {
     throw new Error('结束时间必须晚于开始时间');
   }
 }
@@ -91,13 +96,14 @@ export async function updateMatch(id: string, input: MatchInput): Promise<void> 
 export async function deleteMatch(id: string): Promise<void> {
   await requireAdmin();
   const client = await db.connect();
+  let imageKeys: string[] = [];
   try {
     await client.query('BEGIN');
     const { rows } = await client.query(
       'SELECT image_url FROM match_records WHERE match_id = $1',
       [id]
     );
-    const keys = rows
+    imageKeys = rows
       .map((r) => r.image_url as string)
       .filter(Boolean)
       .map(extractCosKey)
@@ -111,15 +117,15 @@ export async function deleteMatch(id: string): Promise<void> {
     await client.query('DELETE FROM teams WHERE match_id = $1', [id]);
     await client.query('DELETE FROM matches WHERE id = $1', [id]);
     await client.query('COMMIT');
-    if (keys.length > 0) {
-      await deleteCosObjects(keys).catch((err) =>
-        console.error('删除 COS 图片失败（忽略）:', err)
-      );
-    }
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   } finally {
     client.release();
+  }
+  if (imageKeys.length > 0) {
+    await deleteCosObjects(imageKeys).catch((err) =>
+      console.error('删除 COS 图片失败（忽略）:', err)
+    );
   }
 }
