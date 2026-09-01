@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { listMatches } from '@/lib/actions/matches';
+import { getCurrentUser } from '@/lib/actions/auth';
+import { createMatch, listMatches } from '@/lib/actions/matches';
+import MatchFormModal from '@/components/MatchFormModal';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -20,6 +22,8 @@ export default function TimelinePage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [filter, setFilter] = useState<'all' | 'recent' | 'history'>('all');
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showCreateMatch, setShowCreateMatch] = useState(false);
 
   useEffect(() => {
     fetchMatches();
@@ -29,6 +33,26 @@ export default function TimelinePage() {
 
 
 
+
+  useEffect(() => {
+    checkAdmin();
+  }, []);
+
+  const checkAdmin = async () => {
+    try {
+      const user = await getCurrentUser();
+      setIsAdmin(user?.role === 'admin');
+    } catch {
+      setIsAdmin(false);
+    }
+  };
+
+  const handleCreateMatch = async (values: { name: string; description: string; start_date: string; end_date: string }) => {
+    await createMatch(values);
+    setShowCreateMatch(false);
+    fetchMatches();
+    alert('周赛已创建');
+  };
 
   const fetchMatches = async () => {
     try {
@@ -124,6 +148,15 @@ export default function TimelinePage() {
           <Link href="/" className="text-cyan-600 hover:text-cyan-700 hover:underline inline-block font-medium">
             ← 返回首页
           </Link>
+
+          {isAdmin && (
+            <button
+              onClick={() => setShowCreateMatch(true)}
+              className="mt-4 px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 font-medium"
+            >
+              + 新建周赛
+            </button>
+          )}
         </div>
 
         {/* Timeline */}
@@ -172,6 +205,15 @@ export default function TimelinePage() {
               </div>
             ))}
           </div>
+        )}
+
+        {showCreateMatch && (
+          <MatchFormModal
+            title="新建周赛"
+            initial={null}
+            onClose={() => setShowCreateMatch(false)}
+            onSave={handleCreateMatch}
+          />
         )}
       </div>
     </div>
