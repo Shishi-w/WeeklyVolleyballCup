@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import type { UserAchievement } from '@/lib/types';
 
 export async function listUserAchievements(userId: string) {
@@ -37,7 +37,7 @@ interface UpsertAchievementInput {
 }
 
 export async function upsertAchievement(input: UpsertAchievementInput): Promise<void> {
-  await requireUser();
+  await requireAdmin();
   const teamId = input.team_id || null;
   const type = input.achievement_type || 'participation';
   const description = input.description || '';
@@ -60,6 +60,6 @@ export async function upsertAchievement(input: UpsertAchievementInput): Promise<
 }
 
 export async function deleteAchievement(id: string): Promise<void> {
-  await requireUser();
+  await requireAdmin();
   await db.query('DELETE FROM user_achievements WHERE id = $1', [id]);
 }

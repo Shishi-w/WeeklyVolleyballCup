@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import type { TeamResult } from '@/lib/types';
 
 export async function listTeamResultsByMatch(matchId: string): Promise<TeamResult[]> {
@@ -49,7 +49,7 @@ export async function upsertTeamResults(
   matchId: string,
   results: { team_id: string; rank: number }[]
 ): Promise<void> {
-  await requireUser();
+  await requireAdmin();
   for (const r of results) {
     await db.query(
       `INSERT INTO match_team_results (match_id, team_id, rank, is_winner)

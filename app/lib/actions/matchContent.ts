@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin, requireUser } from '@/lib/auth';
 
 type ContentTable = 'match_themes' | 'match_rules' | 'match_results';
 
@@ -11,8 +11,12 @@ interface SaveContentInput {
   content: string;
 }
 
-async function saveContent(table: ContentTable, input: SaveContentInput): Promise<void> {
-  const user = await requireUser();
+async function saveContent(
+  table: ContentTable,
+  input: SaveContentInput,
+  adminOnly = false
+): Promise<void> {
+  const user = adminOnly ? await requireAdmin() : await requireUser();
   const editedBy = user.email || 'Anonymous';
   const editedByUsername = user.username || '匿名用户';
 
@@ -56,5 +60,5 @@ export async function getResult(matchId: string) {
 }
 
 export async function saveResult(input: SaveContentInput): Promise<void> {
-  await saveContent('match_results', input);
+  await saveContent('match_results', input, true);
 }
