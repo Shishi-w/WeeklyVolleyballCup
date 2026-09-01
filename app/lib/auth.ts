@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
+import { db } from '@/lib/db';
 
 const SESSION_COOKIE = 'wvc_session';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 天
@@ -9,6 +10,7 @@ export interface SessionUser {
   id: string;
   email: string;
   username: string | null;
+  role: 'admin' | 'user';
 }
 
 function getSecret(): Uint8Array {
@@ -20,7 +22,7 @@ function getSecret(): Uint8Array {
 }
 
 export async function signSession(user: SessionUser): Promise<string> {
-  return new SignJWT({ email: user.email, username: user.username })
+  return new SignJWT({ email: user.email, username: user.username, role: user.role })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user.id)
     .setIssuedAt()
@@ -36,6 +38,7 @@ export async function verifySession(token: string): Promise<SessionUser | null> 
       id: payload.sub,
       email: typeof payload.email === 'string' ? payload.email : '',
       username: typeof payload.username === 'string' ? payload.username : null,
+      role: payload.role === 'admin' ? 'admin' : 'user',
     };
   } catch {
     return null;
@@ -72,6 +75,15 @@ export async function requireUser(): Promise<SessionUser> {
     throw new Error('请先登录');
   }
   return user;
+}
+
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await requireUser();
+  const { rows } = await db.query('SELECT role FROM users WHERE id = $1', [user.id]);
+  if (rows[0]?.role !== 'admin') {
+    throw new Error('无权限操作');
+  }
+  return { ...user, role: 'admin' };
 }
 
 export function hashPassword(password: string): string {

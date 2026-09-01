@@ -51,7 +51,7 @@ export async function register(
 export async function login(email: string, password: string): Promise<AuthResult> {
   const trimmedEmail = email.trim().toLowerCase();
   const result = await db.query(
-    'SELECT id, email, username, password_hash FROM users WHERE email = $1',
+    'SELECT id, email, username, password_hash, role FROM users WHERE email = $1',
     [trimmedEmail]
   );
   const user = result.rows[0];
@@ -61,7 +61,12 @@ export async function login(email: string, password: string): Promise<AuthResult
   if (!verifyPassword(password, user.password_hash)) {
     return { ok: false, code: 'invalid_credentials', error: '邮箱或密码错误' };
   }
-  await setSessionCookie({ id: user.id, email: user.email, username: user.username });
+  await setSessionCookie({
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    role: user.role === 'admin' ? 'admin' : 'user',
+  });
   return { ok: true };
 }
 
