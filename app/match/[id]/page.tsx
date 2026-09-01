@@ -751,7 +751,7 @@ export default function MatchDetailPage() {
                         onEdit={handleEditRecordCaption}
                     />
                 )}
-                {showRecordResults && isLoggedIn && (
+                {showRecordResults && isAdmin && (
                     <RecordResultsModal
                         matchId={matchId}
                         teams={teams}
