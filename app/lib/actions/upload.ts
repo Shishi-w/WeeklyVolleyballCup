@@ -51,3 +51,16 @@ export async function uploadImage(formData: FormData): Promise<{ url: string }> 
   const base = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || `https://${bucket}.cos.${region}.myqcloud.com`;
   return { url: `${base}/${key}` };
 }
+
+export async function deleteCosObjects(keys: string[]): Promise<void> {
+  if (keys.length === 0) return;
+  const bucket = process.env.COS_BUCKET;
+  const region = process.env.COS_REGION;
+  if (!bucket || !region) return;
+  await new Promise<void>((resolve, reject) => {
+    getCos().deleteMultipleObject(
+      { Bucket: bucket, Region: region, Objects: keys.map((Key) => ({ Key })) },
+      (err) => (err ? reject(err) : resolve())
+    );
+  });
+}
