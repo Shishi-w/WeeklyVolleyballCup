@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getCurrentUser } from '@/lib/actions/auth';
-import { getMatchById } from '@/lib/actions/matches';
+import { getMatchById, updateMatch, deleteMatch } from '@/lib/actions/matches';
 import { listMatchTeams, createTeam, updateTeam, deleteTeam } from '@/lib/actions/teams';
 import {
   getLatestTheme,
@@ -34,6 +34,7 @@ import { uploadImage } from '@/lib/actions/upload';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import MatchFormModal from '@/components/MatchFormModal';
 import { getOptimizedImageUrl, getBlurPlaceholder } from '@/lib/imageUtils';
 import { VolleyballIcon, LoadingIcon, FlowerIcon } from '@/components/Icons';
 import type { Team, TeamPlayer } from '@/lib/types';
@@ -96,6 +97,8 @@ export default function MatchDetailPage() {
     const [showAddTeam, setShowAddTeam] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [showEditMatch, setShowEditMatch] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
     const [newRecordCaption, setNewRecordCaption] = useState('');
     const [editingTeam, setEditingTeam] = useState<Team | null>(null);
@@ -235,9 +238,11 @@ export default function MatchDetailPage() {
             const user = await getCurrentUser();
             setIsLoggedIn(!!user);
             setUserId(user?.id || null);
+            setIsAdmin(user?.role === 'admin');
         } catch (error) {
             setIsLoggedIn(false);
             setUserId(null);
+            setIsAdmin(false);
         }
     };
 
@@ -308,6 +313,25 @@ export default function MatchDetailPage() {
     };
 
 
+
+    const handleSaveMatch = async (values: { name: string; description: string; start_date: string; end_date: string }) => {
+        await updateMatch(matchId, values);
+        setShowEditMatch(false);
+        fetchData();
+        alert('周赛已更新');
+    };
+
+    const handleDeleteMatch = async () => {
+        if (!confirm('确定要删除这场周赛吗？\n\n将永久删除该周赛及全部关联数据（队伍、照片、赛果、荣誉、主题/规则/结果），此操作不可恢复！')) return;
+        try {
+            await deleteMatch(matchId);
+            alert('周赛已删除');
+            window.location.href = '/timeline';
+        } catch (error) {
+            console.error('删除周赛失败:', error);
+            alert(error instanceof Error ? error.message : '删除失败，请重试');
+        }
+    };
 
     const handleDeleteRecord = async (recordId: string) => {
         if (!isLoggedIn) {
@@ -509,6 +533,22 @@ export default function MatchDetailPage() {
                         <span>开始：{new Date(match.start_date).toLocaleString('zh-CN')}</span>
                         <span>结束：{new Date(match.end_date).toLocaleString('zh-CN')}</span>
                     </div>
+                    {isAdmin && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                                onClick={() => setShowEditMatch(true)}
+                                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm rounded-xl hover:shadow-soft transition-all duration-300"
+                            >
+                                编辑周赛
+                            </button>
+                            <button
+                                onClick={handleDeleteMatch}
+                                className="px-4 py-2 bg-gradient-to-r from-red-500 to-rose-500 text-white text-sm rounded-xl hover:shadow-soft transition-all duration-300"
+                            >
+                                删除周赛
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Theme and Rules Section */}
@@ -519,19 +559,12 @@ export default function MatchDetailPage() {
                     <div className="mb-6 pb-6 border-b border-cyan-100 last:border-0 last:pb-0 last:mb-0">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
                             <h3 className="text-base sm:text-xl font-semibold text-cyan-800">本周主题</h3>
-                            {canEdit ? (
+                            {canEdit && (
                                 <button
                                     onClick={() => setEditingTheme(!editingTheme)}
                                     className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto"
                                 >
                                     {editingTheme ? '取消编辑' : '编辑主题'}
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleRedirectToLogin}
-                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors w-full sm:w-auto cursor-not-allowed"
-                                >
-                                    🔒 登录后可编辑
                                 </button>
                             )}
                         </div>
@@ -576,19 +609,12 @@ export default function MatchDetailPage() {
                     <div>
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
                             <h3 className="text-base sm:text-xl font-semibold text-cyan-800">赛事规则</h3>
-                            {isLoggedIn ? (
+                            {isLoggedIn && (
                                 <button
                                     onClick={() => setEditingRule(!editingRule)}
                                     className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto"
                                 >
                                     {editingRule ? '取消编辑' : '编辑规则'}
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleRedirectToLogin}
-                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors w-full sm:w-auto cursor-not-allowed"
-                                >
-                                    🔒 登录后可编辑
                                 </button>
                             )}
                         </div>
@@ -635,7 +661,7 @@ export default function MatchDetailPage() {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
                         <h2 className="text-lg sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-700">参赛队伍</h2>
                         <div className="flex gap-2">
-                            {isCompleted && canEdit && (
+                            {isCompleted && isAdmin && (
                                 <button
                                     onClick={() => setShowRecordResults(true)}
                                     className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 flex items-center gap-2"
@@ -652,14 +678,6 @@ export default function MatchDetailPage() {
                                 </button>
                             )}
                         </div>
-                        {!canEdit && (
-                            <button
-                                onClick={handleRedirectToLogin}
-                                className="px-4 py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors cursor-not-allowed"
-                            >
-                                🔒 登录后可管理
-                            </button>
-                        )}
                     </div>
 
                     {teams.length === 0 ? (
@@ -739,6 +757,14 @@ export default function MatchDetailPage() {
                         teams={teams}
                         onClose={() => setShowRecordResults(false)}
                         onSave={fetchData}
+                    />
+                )}
+                {showEditMatch && match && (
+                    <MatchFormModal
+                        title="编辑周赛"
+                        initial={{ name: match.name, description: match.description || '', start_date: match.start_date, end_date: match.end_date }}
+                        onClose={() => setShowEditMatch(false)}
+                        onSave={handleSaveMatch}
                     />
                 )}
 
@@ -833,25 +859,18 @@ export default function MatchDetailPage() {
                         <div className="mb-6 sm:mb-8 pb-6 sm:pb-8 border-b border-cyan-100 last:border-0 last:pb-0 last:mb-0">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
                                 <h3 className="text-base sm:text-xl font-semibold text-cyan-800">赛事结果公示</h3>
-                                {isLoggedIn ? (
+                                {isAdmin && (
                                     <button
                                         onClick={() => setEditingResult(!editingResult)}
                                         className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto"
                                     >
                                         {editingResult ? '取消编辑' : '编辑结果'}
                                     </button>
-                                ) : (
-                                    <button
-                                        onClick={handleRedirectToLogin}
-                                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors w-full sm:w-auto cursor-not-allowed"
-                                    >
-                                        🔒 登录后可编辑
-                                    </button>
                                 )}
                             </div>
 
 
-                        {editingResult && isLoggedIn ? (
+                        {editingResult && isAdmin ? (
                             <div>
                                 <textarea
                                     value={resultContent}
@@ -956,17 +975,6 @@ export default function MatchDetailPage() {
                                     </div>
                                     <p className="text-xs text-gray-500">💡 提示：支持同时选择多张图片进行上传</p>
                                 </div>
-                            </div>
-                        )}
-
-                        {!isLoggedIn && (
-                            <div className="mb-4 sm:mb-6 text-center">
-                                <button
-                                    onClick={handleRedirectToLogin}
-                                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-300 text-white text-sm sm:text-base rounded-xl hover:bg-gray-400 transition-colors cursor-not-allowed w-full sm:w-auto"
-                                >
-                                    📷 登录即可上传赛事照片
-                                </button>
                             </div>
                         )}
 
