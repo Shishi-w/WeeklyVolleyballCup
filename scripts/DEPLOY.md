@@ -170,9 +170,11 @@ npm run build
 ### E1 启动服务
 
 ```bash
-# standalone 产物需要把 public 和 .next/static 拷过去
-cp -r public .next/standalone/public 2>/dev/null || true
-cp -r .next/static .next/standalone/.next/static
+# standalone 产物需要把 public 和 .next/static 拷过去。
+# 注意：仓库已加 postbuild 脚本，npm run build 时会自动完成这两步复制。
+# 若跳过 npm run build 直接拷贝产物，才需要手动执行：
+# cp -r public .next/standalone/public 2>/dev/null || true
+# cp -r .next/static .next/standalone/.next/static
 
 pm2 start .next/standalone/server.js --name wvc
 pm2 save
