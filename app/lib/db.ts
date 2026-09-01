@@ -17,6 +17,6 @@ function createPool(): Pool {
 
 export const db = globalForDb.dbPool ?? createPool();
 
-if (process.env.NODE_ENV !== 'production') {
+if (!globalForDb.dbPool) {
   globalForDb.dbPool = db;
 }
