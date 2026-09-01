@@ -91,16 +91,20 @@ SELECT id, username, full_name, created_at FROM users;
 
 -- ------------------------------------------------------------
 -- 3) 重建 matches_with_status 视图（status 由时间段计算）
---    若原 Supabase 视图定义不同，请以原定义为准核对。
+--    先 DROP 再 CREATE：避免与还原进来的视图列类型冲突，
+--    且显式列出列（matches 表本身有 status 列，不能用 SELECT *）。
 -- ------------------------------------------------------------
-CREATE OR REPLACE VIEW matches_with_status AS
+DROP VIEW IF EXISTS matches_with_status;
+
+CREATE VIEW matches_with_status AS
 SELECT
-  *,
+  id, name, description, start_date, end_date,
   CASE
     WHEN now() < start_date                        THEN 'upcoming'
     WHEN now() BETWEEN start_date AND end_date     THEN 'ongoing'
     ELSE 'completed'
-  END AS status
+  END AS status,
+  created_at, updated_at
 FROM matches;
 
 -- ------------------------------------------------------------
