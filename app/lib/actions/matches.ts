@@ -3,6 +3,7 @@
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { deleteCosObjects } from '@/lib/actions/upload';
+import { getThumbPath } from '@/lib/imageUtils';
 
 export type TimelineFilter = 'all' | 'recent' | 'history';
 
@@ -103,11 +104,13 @@ export async function deleteMatch(id: string): Promise<void> {
       'SELECT image_url FROM match_records WHERE match_id = $1',
       [id]
     );
-    imageKeys = rows
+    const originalKeys = rows
       .map((r) => r.image_url as string)
       .filter(Boolean)
       .map(extractCosKey)
       .filter((k): k is string => Boolean(k));
+    // 同步删除上传时生成的 .thumb.webp 缩略图
+    imageKeys = [...originalKeys, ...originalKeys.map(getThumbPath)];
     await client.query('DELETE FROM user_achievements WHERE match_id = $1', [id]);
     await client.query('DELETE FROM match_team_results WHERE match_id = $1', [id]);
     await client.query('DELETE FROM match_records WHERE match_id = $1', [id]);

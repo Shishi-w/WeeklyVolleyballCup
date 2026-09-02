@@ -7,6 +7,7 @@ const imageHost = imageBaseUrl ? new URL(imageBaseUrl).hostname : 'example.com';
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
+  // server action 默认 1MB 请求体上限，手机原图会超，上传图片需要调大
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',
