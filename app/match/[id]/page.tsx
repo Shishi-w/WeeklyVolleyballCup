@@ -35,7 +35,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import MatchFormModal from '@/components/MatchFormModal';
-import { getOptimizedImageUrl, getThumbUrl, getBlurPlaceholder } from '@/lib/imageUtils';
+import { getOptimizedImageUrl, getBlurPlaceholder } from '@/lib/imageUtils';
 import { VolleyballIcon, LoadingIcon, FlowerIcon } from '@/components/Icons';
 import type { Team, TeamPlayer } from '@/lib/types';
 
@@ -72,6 +72,7 @@ type Result = {
 type Record = {
     id: string;
     image_url: string;
+    thumb_url?: string | null;
     caption: string;
     edited_by_username: string | null;
     updated_at: string;
@@ -986,7 +987,7 @@ export default function MatchDetailPage() {
                                             className="relative w-full h-40 sm:h-48 bg-cyan-100 cursor-zoom-in"
                                             onClick={() => setViewingImage(getOptimizedImageUrl(record.image_url))}
                                         >
-                                            <RecordImage imageUrl={record.image_url} alt={record.caption || '赛事记录'} />
+                                            <RecordImage imageUrl={record.image_url} thumbUrl={record.thumb_url} alt={record.caption || '赛事记录'} />
                                         </div>
 
 
@@ -1090,10 +1091,21 @@ export default function MatchDetailPage() {
 }
 
 
-// 相册缩略图：优先加载上传时生成的 .thumb.webp 小图；
-// 老图或缩略图生成失败时（加载 404）回退到原图。
-function RecordImage({ imageUrl, alt }: { imageUrl: string; alt: string }) {
-    const [current, setCurrent] = useState(getThumbUrl(imageUrl));
+// 相册卡片图：优先用服务端签名的 .thumb.webp 小图（listRecords 返回的 thumb_url）；
+// 老图/无小图/小图加载失败时回退到签名原图 image_url。
+function RecordImage({ imageUrl, thumbUrl, alt }: { imageUrl: string; thumbUrl?: string | null; alt: string }) {
+    const [current, setCurrent] = useState(thumbUrl || imageUrl);
+    useEffect(() => {
+        setCurrent(thumbUrl || imageUrl);
+    }, [imageUrl, thumbUrl]);
+
+    if (!imageUrl) {
+        return (
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">
+                暂无图片
+            </div>
+        );
+    }
     return (
         <Image
             src={current}

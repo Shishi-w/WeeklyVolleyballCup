@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
-import { deleteCosObjects } from '@/lib/actions/upload';
+import { deleteCosObjects, extractKeyFromUrl } from '@/lib/cos-image';
 import { getThumbPath } from '@/lib/imageUtils';
 
 export type TimelineFilter = 'all' | 'recent' | 'history';
@@ -24,18 +24,6 @@ function validateMatchInput(input: MatchInput): void {
   }
   if (end <= start) {
     throw new Error('结束时间必须晚于开始时间');
-  }
-}
-
-function extractCosKey(url: string): string | null {
-  const prefix = process.env.NEXT_PUBLIC_IMAGE_BASE_URL;
-  if (prefix && url.startsWith(prefix)) {
-    return url.slice(prefix.length).replace(/^\//, '');
-  }
-  try {
-    return new URL(url).pathname.replace(/^\//, '');
-  } catch {
-    return null;
   }
 }
 
@@ -105,9 +93,7 @@ export async function deleteMatch(id: string): Promise<void> {
       [id]
     );
     const originalKeys = rows
-      .map((r) => r.image_url as string)
-      .filter(Boolean)
-      .map(extractCosKey)
+      .map((r) => extractKeyFromUrl(r.image_url as string))
       .filter((k): k is string => Boolean(k));
     // 同步删除上传时生成的 .thumb.webp 缩略图
     imageKeys = [...originalKeys, ...originalKeys.map(getThumbPath)];

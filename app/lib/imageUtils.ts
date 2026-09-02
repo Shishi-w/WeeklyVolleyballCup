@@ -28,11 +28,6 @@ export function getThumbPath(path: string): string {
   return `${base}${stem}.thumb.webp`;
 }
 
-/** 展示用缩略图 URL（由原图 URL 推导） */
-export function getThumbUrl(url: string): string {
-  return getThumbPath(url);
-}
-
 /**
  * 生成模糊占位图的 base64
  */

@@ -2,22 +2,35 @@
 
 import { db } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
-import { getSignedUrl, extractKeyFromUrl } from '@/lib/actions/upload';
+import { getSignedUrl, extractKeyFromUrl, deleteCosObjects } from '@/lib/cos-image';
+import { getThumbPath } from '@/lib/imageUtils';
 
 export async function listRecords(matchId: string) {
   const { rows } = await db.query(
     'SELECT * FROM match_records WHERE match_id = $1 ORDER BY created_at DESC',
     [matchId]
   );
-  // 为每个图片 URL 生成签名，确保 COS 私有桶也能正常访问
+  // 库里存的是对象 key（老数据可能是完整 URL），这里解析出 key 后现场签名：
+  // image_url = 签名原图（点开看原图），thumb_url = 签名小图（列表加载）。
   return Promise.all(
     rows.map(async (row: Record<string, unknown>) => {
-      const imageUrl = row.image_url as string;
-      if (imageUrl && imageUrl.includes('myqcloud.com')) {
-        const key = await extractKeyFromUrl(imageUrl);
-        return { ...row, image_url: await getSignedUrl(key) };
+      const stored = row.image_url as string;
+      const key = extractKeyFromUrl(stored);
+      if (!key) return row; // 非本桶 COS 对象（历史 Supabase 等）原样透传
+
+      let image_url = stored; // 签名失败时回退到原存值，公开桶仍可显示
+      try {
+        image_url = await getSignedUrl(key);
+      } catch (err) {
+        console.error('生成图片签名 URL 失败（回退原值）:', err);
       }
-      return row;
+      let thumb_url: string | null = null;
+      try {
+        thumb_url = await getSignedUrl(getThumbPath(key));
+      } catch (err) {
+        console.error('生成缩略图签名 URL 失败（忽略，前端回退原图）:', err);
+      }
+      return { ...row, image_url, thumb_url };
     })
   );
 }
@@ -37,7 +50,15 @@ export async function createRecord(input: {
 
 export async function deleteRecord(id: string): Promise<void> {
   await requireUser();
+  const { rows } = await db.query('SELECT image_url FROM match_records WHERE id = $1', [id]);
   await db.query('DELETE FROM match_records WHERE id = $1', [id]);
+  // 同步删除 COS 上的原图与缩略图，失败只记日志
+  const key = extractKeyFromUrl(rows[0]?.image_url as string | undefined);
+  if (key) {
+    await deleteCosObjects([key, getThumbPath(key)]).catch((err) =>
+      console.error('删除 COS 图片失败（忽略）:', err)
+    );
+  }
 }
 
 export async function updateCaption(id: string, caption: string): Promise<void> {
