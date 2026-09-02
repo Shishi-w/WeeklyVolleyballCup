@@ -152,7 +152,7 @@ export default function TimelinePage() {
           {isAdmin && (
             <button
               onClick={() => setShowCreateMatch(true)}
-              className="mt-4 px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 font-medium"
+              className="mt-4 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 font-medium"
             >
               + 新建周赛
             </button>

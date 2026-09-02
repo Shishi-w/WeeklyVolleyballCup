@@ -108,9 +108,9 @@ export default function Home() {
     if (hour < 6) return '好球好球';
     if (hour < 9) return '今天打球了吗';
     if (hour < 12) return '真是元气满满的一天';
-    if (hour < 14) return '中午吃啥好吃的了';
+    if (hour < 14) return '真是元气满满的一天';
     if (hour < 18) return '上课不许开小差';
-    if (hour < 22) return '晚上也要吃好的';
+    if (hour < 22) return '晚上好';
     return '好球好球';
   };
 
@@ -319,7 +319,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <span className="relative z-10 flex items-center justify-center gap-2">
                 <VolleyballIcon className="w-6 h-6" />
-                我的队伍
+                个人纪录
                 <span className="group-hover:translate-x-1 transition-transform">→</span>
               </span>
                 </Link>
