@@ -7,6 +7,11 @@ const imageHost = imageBaseUrl ? new URL(imageBaseUrl).hostname : 'example.com';
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
   images: {
     remotePatterns: [
       {

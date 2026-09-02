@@ -1,13 +1,14 @@
 /**
  * 返回图片 URL。
  * 图片缩放由 next/image 优化器自动处理，这里直接透传原始地址
- * （兼容 COS / CDN 域名上的图片）。
+ * （兼容 COS / CDN 域名上的图片，包括签名 URL）。
  */
 export function getOptimizedImageUrl(
   originalUrl: string,
   _width: number = 800,
   _quality: number = 75
 ): string {
+  // 签名 URL 已包含查询参数，直接透传
   return originalUrl;
 }
 

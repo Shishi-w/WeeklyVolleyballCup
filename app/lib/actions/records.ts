@@ -2,13 +2,24 @@
 
 import { db } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
+import { getSignedUrl, extractKeyFromUrl } from '@/lib/actions/upload';
 
 export async function listRecords(matchId: string) {
   const { rows } = await db.query(
     'SELECT * FROM match_records WHERE match_id = $1 ORDER BY created_at DESC',
     [matchId]
   );
-  return rows;
+  // 为每个图片 URL 生成签名，确保 COS 私有桶也能正常访问
+  return Promise.all(
+    rows.map(async (row: Record<string, unknown>) => {
+      const imageUrl = row.image_url as string;
+      if (imageUrl && imageUrl.includes('myqcloud.com')) {
+        const key = await extractKeyFromUrl(imageUrl);
+        return { ...row, image_url: await getSignedUrl(key) };
+      }
+      return row;
+    })
+  );
 }
 
 export async function createRecord(input: {

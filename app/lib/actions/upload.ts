@@ -16,6 +16,41 @@ function getCos(): COS {
   return cos;
 }
 
+/** 为 COS 对象生成带签名的临时访问 URL（有效期 24 小时） */
+export async function getSignedUrl(key: string): Promise<string> {
+  const bucket = process.env.COS_BUCKET!;
+  const region = process.env.COS_REGION!;
+  const url = getCos().getObjectUrl(
+    {
+      Bucket: bucket,
+      Region: region,
+      Key: key,
+      Sign: true,
+      Expires: 86400, // 24 小时
+    },
+    (err, data) => {
+      if (err) console.error('生成签名 URL 失败:', err);
+    }
+  );
+  return url;
+}
+
+/** 从完整 URL 中提取 COS 对象 Key */
+export async function extractKeyFromUrl(url: string): Promise<string> {
+  const base = process.env.NEXT_PUBLIC_IMAGE_BASE_URL;
+  if (base && url.startsWith(base + '/')) {
+    return url.slice(base.length + 1);
+  }
+  // 兼容直接 COS 域名
+  const bucket = process.env.COS_BUCKET;
+  const region = process.env.COS_REGION;
+  const cosPrefix = `https://${bucket}.cos.${region}.myqcloud.com/`;
+  if (url.startsWith(cosPrefix)) {
+    return url.slice(cosPrefix.length);
+  }
+  return url;
+}
+
 export async function uploadImage(formData: FormData): Promise<{ url: string }> {
   await requireUser();
 
@@ -48,8 +83,9 @@ export async function uploadImage(formData: FormData): Promise<{ url: string }> 
     );
   });
 
-  const base = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || `https://${bucket}.cos.${region}.myqcloud.com`;
-  return { url: `${base}/${key}` };
+  // 返回签名 URL，确保 COS 桶保持私有也能正常访问
+  const signedUrl = await getSignedUrl(key);
+  return { url: signedUrl };
 }
 
 export async function deleteCosObjects(keys: string[]): Promise<void> {
