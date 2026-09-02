@@ -666,7 +666,7 @@ export default function MatchDetailPage() {
                                     onClick={() => setShowRecordResults(true)}
                                     className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 flex items-center gap-2"
                                 >
-                                    🏆 记录比赛结果
+                                    记录比赛结果
                                 </button>
                             )}
                             {canEdit && (
@@ -828,7 +828,7 @@ export default function MatchDetailPage() {
                                             <div>
                                                 <p className="font-bold text-gray-800 text-lg">{achievement.title}</p>
                                                 <p className="text-sm text-gray-600">
-                                                    👤 {achievement.profiles?.user_name || '未知用户'}
+                                                    👤 {achievement.user_name || '未知用户'}
                                                 </p>
                                                 {achievement.teams?.team_name && (
                                                     <p className="text-xs text-gray-500 mt-1">
@@ -912,29 +912,7 @@ export default function MatchDetailPage() {
                             <h3 className="text-base sm:text-xl font-semibold text-cyan-800">赛事图文记录</h3>
                         </div>
 
-                        {isLoggedIn && (
-                            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-cyan-50 rounded-xl border-2 border-cyan-100">
-                                <div className="flex flex-col sm:flex-row gap-2">
-                                    <input
-                                        type="text"
-                                        value={newRecordCaption}
-                                        onChange={(e) => setNewRecordCaption(e.target.value)}
-                                        className="flex-1 px-3 sm:px-4 py-2 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-sm sm:text-base outline-none transition-all"
-                                        placeholder="图片说明（可选）"
-                                    />
-                                    <label className="px-3 sm:px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 cursor-pointer text-center">
-                                        {uploadingImage ? '上传中...' : '上传图片'}
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleUploadImage}
-                                            disabled={uploadingImage}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                </div>
-                            </div>
-                        )}
+                        
 
                         {isLoggedIn && (
                             <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-cyan-50 rounded-xl border-2 border-cyan-100">
@@ -962,7 +940,7 @@ export default function MatchDetailPage() {
                                             placeholder="图片说明（可选，应用于所有图片）"
                                         />
                                         <label className={`px-3 sm:px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 cursor-pointer text-center ${uploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                            {uploadingImage ? '上传中...' : '📷 批量上传图片'}
+                                            {uploadingImage ? '上传中...' : '上传图片'}
                                             <input
                                                 type="file"
                                                 accept="image/*"
@@ -973,7 +951,7 @@ export default function MatchDetailPage() {
                                             />
                                         </label>
                                     </div>
-                                    <p className="text-xs text-gray-500">💡 提示：支持同时选择多张图片进行上传</p>
+                                    <p className="text-xs text-gray-500"> 提示：支持同时选择多张图片进行上传</p>
                                 </div>
                             </div>
                         )}
@@ -1026,7 +1004,7 @@ export default function MatchDetailPage() {
                                                     onClick={() => setEditingRecord(record)}
                                                     className="text-cyan-600 hover:text-cyan-700 text-xs sm:text-sm font-medium"
                                                 >
-                                                    📝 添加说明
+                                                     添加说明
                                                 </button>
                                             </div>
                                         )}
