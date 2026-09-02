@@ -29,7 +29,7 @@ import {
   deleteAchievement,
 } from '@/lib/actions/achievements';
 import { listProfileSelect } from '@/lib/actions/profiles';
-import { uploadImage } from '@/lib/actions/upload';
+import { uploadImage, generateThumb } from '@/lib/actions/upload';
 import Link from 'next/link';
 import Image from 'next/image';
 import MatchFormModal from '@/components/MatchFormModal';
@@ -74,7 +74,7 @@ type Record = {
     thumb_url?: string | null;
     caption: string;
     edited_by_username: string | null;
-    updated_at: string;
+    created_at: string;
     comments?: string[];
 };
 
@@ -87,7 +87,27 @@ type MatchDetailData = {
     teams: Team[];
     matchResults: any[];
     achievements: any[];
-};
+};/** 以 limit 并发跑 items（顺序写入 results），避免一次并发过多请求 */
+async function mapWithConcurrency<T, R>(
+    items: T[],
+    limit: number,
+    fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+    const results: R[] = new Array(items.length);
+    let next = 0;
+    const workerCount = Math.max(1, Math.min(limit, items.length));
+    await Promise.all(
+        Array.from({ length: workerCount }, async () => {
+            while (next < items.length) {
+                const i = next++;
+                const item = items[i];
+                if (item === undefined) continue;
+                results[i] = await fn(item, i);
+            }
+        })
+    );
+    return results;
+}
 
 export default function MatchDetailClient({
     matchId,
@@ -198,10 +218,8 @@ export default function MatchDetailClient({
         try {
             let successCount = 0;
 
-            for (let i = 0; i < validFiles.length; i++) {
-                const file = validFiles[i];
-                if (!file) continue;
-
+            // 并发上传（上限 3）：每张 = 传原图 + 写记录，缩略图后台生成不阻塞
+            await mapWithConcurrency(validFiles, 3, async (file) => {
                 try {
                     const formData = new FormData();
                     formData.append('file', file);
@@ -214,12 +232,19 @@ export default function MatchDetailClient({
                         caption: newRecordCaption || '',
                     });
 
+                    void generateThumb(url).catch((err) =>
+                        console.error('后台生成缩略图失败（忽略，前端回退原图）:', err)
+                    );
+
                     successCount++;
-                    setUploadProgress({ current: i + 1, total: validFiles.length });
                 } catch (error) {
-                    console.error(`上传第 ${i + 1} 张图片失败:`, error);
+                    console.error('上传图片失败:', error);
+                } finally {
+                    setUploadProgress((prev) =>
+                        prev ? { ...prev, current: prev.current + 1 } : prev
+                    );
                 }
-            }
+            });
 
             setNewRecordCaption('');
             setUploadProgress(null);
@@ -980,7 +1005,7 @@ export default function MatchDetailClient({
                                             <div className="p-2 sm:p-3">
                                                 <p className="text-gray-700 text-xs sm:text-sm leading-relaxed">{record.caption}</p>
                                                 <p className="text-xs text-gray-500 mt-1.5 sm:mt-2">
-                                                    {record.edited_by_username} · {new Date(record.updated_at).toLocaleString('zh-CN')}
+                                                    上传于 {new Date(record.created_at).toLocaleString('zh-CN')}
                                                 </p>
                                             </div>
                                         )}
@@ -1123,7 +1148,7 @@ function ImageLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () =>
                 ×
             </button>
             <div
-                className="max-w-full max-h-full relative"
+                className="max-w-full max-h-full flex flex-col items-center gap-4"
                 onClick={(e) => e.stopPropagation()}
             >
                 <Image
@@ -1131,9 +1156,18 @@ function ImageLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () =>
                     alt="查看大图"
                     width={1200}
                     height={800}
-                    className="max-w-full max-h-[90vh] object-contain rounded-lg"
+                    className="max-w-full max-h-[80vh] object-contain rounded-lg"
                     unoptimized
                 />
+                <a
+                    href={imageUrl}
+                    download
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bg-white/20 hover:bg-white/30 text-white px-5 py-2 rounded-full text-sm transition-colors"
+                >
+                    下载原图
+                </a>
             </div>
         </div>
     );

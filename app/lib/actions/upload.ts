@@ -44,18 +44,35 @@ export async function uploadImage(formData: FormData): Promise<{ url: string }> 
 
   await putObject(bucket, region, key, buffer, file.type || 'image/jpeg');
 
-  // 顺带生成并上传缩略图（列表加载用）。失败只记日志：前端会回退到原图，不影响上传。
-  try {
-    const thumbBody = await sharp(buffer)
-      .rotate()
-      .resize({ width: THUMB_MAX_SIZE, height: THUMB_MAX_SIZE, fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: THUMB_QUALITY })
-      .toBuffer();
-    await putObject(bucket, region, getThumbPath(key), thumbBody, 'image/webp');
-  } catch (err) {
-    console.error('生成/上传缩略图失败（忽略，前端将回退到原图）:', err);
+  // 入库只存对象 key（不带签名、不过期）；展示时由 listRecords 现场对原图与小图签名。
+  // 缩略图不再在此同步生成（避免上传被 sharp CPU 拖慢），改由 generateThumb 单独调用。
+  return { url: key };
+}
+
+/**
+ * 上传原图后单独调用：从 COS 取回原图生成 .thumb.webp。
+ * 设计为「上传后立即返回成功、缩略图后台生成」；失败只记日志，
+ * 前端 listRecords / RecordImage 已有「缩略图缺失回退原图」的兜底，不影响展示。
+ */
+export async function generateThumb(key: string): Promise<void> {
+  await requireUser();
+  const bucket = process.env.COS_BUCKET;
+  const region = process.env.COS_REGION;
+  if (!bucket || !region) {
+    throw new Error('缺少 COS_BUCKET / COS_REGION 环境变量');
   }
 
-  // 入库只存对象 key（不带签名、不过期）；展示时由 listRecords 现场对原图与小图签名。
-  return { url: key };
+  const cos = getCosClient();
+  const origin = await new Promise<Buffer>((resolve, reject) => {
+    cos.getObject({ Bucket: bucket, Region: region, Key: key }, (err, data) =>
+      err ? reject(err) : resolve(data.Body as Buffer)
+    );
+  });
+
+  const thumbBody = await sharp(origin)
+    .rotate()
+    .resize({ width: THUMB_MAX_SIZE, height: THUMB_MAX_SIZE, fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: THUMB_QUALITY })
+    .toBuffer();
+  await putObject(bucket, region, getThumbPath(key), thumbBody, 'image/webp');
 }
