@@ -35,7 +35,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import MatchFormModal from '@/components/MatchFormModal';
-import { getOptimizedImageUrl, getBlurPlaceholder } from '@/lib/imageUtils';
+import { getOptimizedImageUrl, getThumbUrl, getBlurPlaceholder } from '@/lib/imageUtils';
 import { VolleyballIcon, LoadingIcon, FlowerIcon } from '@/components/Icons';
 import type { Team, TeamPlayer } from '@/lib/types';
 
@@ -1008,16 +1008,7 @@ export default function MatchDetailPage() {
                                             className="relative w-full h-40 sm:h-48 bg-cyan-100 cursor-zoom-in"
                                             onClick={() => setViewingImage(getOptimizedImageUrl(record.image_url))}
                                         >
-                                            <Image
-                                                src={getOptimizedImageUrl(record.image_url, 800, 75)}
-                                                alt={record.caption || '赛事记录'}
-                                                fill
-                                                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                                loading="lazy"
-                                                placeholder="blur"
-                                                blurDataURL={getBlurPlaceholder()}
-                                            />
+                                            <RecordImage imageUrl={record.image_url} alt={record.caption || '赛事记录'} />
                                         </div>
 
 
@@ -1120,6 +1111,28 @@ export default function MatchDetailPage() {
     );
 }
 
+
+// 相册缩略图：优先加载上传时生成的 .thumb.webp 小图；
+// 老图或缩略图生成失败时（加载 404）回退到原图。
+function RecordImage({ imageUrl, alt }: { imageUrl: string; alt: string }) {
+    const [current, setCurrent] = useState(getThumbUrl(imageUrl));
+    return (
+        <Image
+            src={current}
+            alt={alt}
+            fill
+            unoptimized
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            loading="lazy"
+            placeholder="blur"
+            blurDataURL={getBlurPlaceholder()}
+            onError={() => {
+                if (current !== imageUrl) setCurrent(imageUrl);
+            }}
+        />
+    );
+}
 
 // 图片查看器组件
 function ImageLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () => void }) {
