@@ -6,7 +6,13 @@ import type { UserAchievement } from '@/lib/types';
 
 export async function listUserAchievements(userId: string) {
   const { rows } = await db.query(
-    'SELECT * FROM user_achievements WHERE user_id = $1 ORDER BY created_at DESC',
+    `SELECT ua.*, m.name AS match_name, t.team_name, u.username AS user_name
+     FROM user_achievements ua
+     LEFT JOIN matches m ON m.id = ua.match_id
+     LEFT JOIN teams t ON t.id = ua.team_id
+     LEFT JOIN users u ON u.id = ua.user_id
+     WHERE ua.user_id = $1
+     ORDER BY ua.created_at DESC`,
     [userId]
   );
   return rows;
@@ -14,15 +20,17 @@ export async function listUserAchievements(userId: string) {
 
 export async function listMatchAchievements(matchId: string): Promise<UserAchievement[]> {
   const { rows } = await db.query(
-    `SELECT a.*, t.team_name
+    `SELECT a.*, t.team_name, u.username AS user_name
      FROM user_achievements a
      LEFT JOIN teams t ON t.id = a.team_id
+     LEFT JOIN users u ON u.id = a.user_id
      WHERE a.match_id = $1`,
     [matchId]
   );
-  return rows.map(({ team_name, ...rest }) => ({
+  return rows.map(({ team_name, user_name, ...rest }) => ({
     ...rest,
     teams: team_name ? { team_name } : null,
+    user_name: user_name ?? null,
   }));
 }
 

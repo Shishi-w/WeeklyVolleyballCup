@@ -50,17 +50,22 @@ const PATTERN_STYLES: Record<string, string> = {
 
 interface AnnouncementBoardProps {
   isLoggedIn: boolean;
+  initialAnnouncements?: Announcement[];
 }
 
-export default function AnnouncementBoard({ isLoggedIn }: AnnouncementBoardProps) {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function AnnouncementBoard({ isLoggedIn, initialAnnouncements }: AnnouncementBoardProps) {
+  const hasInitial = initialAnnouncements !== undefined;
+  const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements ?? []);
+  const [loading, setLoading] = useState(!hasInitial);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
 
   useEffect(() => {
-    fetchAnnouncements();
+    if (!hasInitial) {
+      fetchAnnouncements();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAnnouncements = async () => {
