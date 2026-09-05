@@ -267,12 +267,12 @@ export default function MatchDetailClient({
     };
 
     const handleSaveTheme = async () => {
-        if (!canEdit) {
+        if (!isAdmin) {
             if (!isLoggedIn) {
                 handleRedirectToLogin();
                 return;
             }
-            alert('请先登录后再编辑主题');
+            alert('无权限操作');
             return;
         }
 
@@ -289,8 +289,12 @@ export default function MatchDetailClient({
     };
 
     const handleSaveRule = async () => {
-        if (!isLoggedIn) {
-            handleRedirectToLogin();
+        if (!isAdmin) {
+            if (!isLoggedIn) {
+                handleRedirectToLogin();
+                return;
+            }
+            alert('无权限操作');
             return;
         }
 
@@ -307,8 +311,12 @@ export default function MatchDetailClient({
     };
 
     const handleSaveResult = async () => {
-        if (!isLoggedIn) {
-            handleRedirectToLogin();
+        if (!isAdmin) {
+            if (!isLoggedIn) {
+                handleRedirectToLogin();
+                return;
+            }
+            alert('无权限操作');
             return;
         }
 
@@ -570,7 +578,7 @@ export default function MatchDetailClient({
                     <div className="mb-6 pb-6 border-b border-cyan-100 last:border-0 last:pb-0 last:mb-0">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
                             <h3 className="text-base sm:text-xl font-semibold text-cyan-800">本周主题</h3>
-                            {canEdit && (
+                            {isAdmin && (
                                 <button
                                     onClick={() => setEditingTheme(!editingTheme)}
                                     className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto"
@@ -580,7 +588,7 @@ export default function MatchDetailClient({
                             )}
                         </div>
 
-                        {editingTheme && canEdit ? (
+                        {editingTheme && isAdmin ? (
                             <div>
                                 <textarea
                                     value={themeContent}
@@ -620,7 +628,7 @@ export default function MatchDetailClient({
                     <div>
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
                             <h3 className="text-base sm:text-xl font-semibold text-cyan-800">赛事规则</h3>
-                            {isLoggedIn && (
+                            {isAdmin && (
                                 <button
                                     onClick={() => setEditingRule(!editingRule)}
                                     className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm sm:text-base rounded-xl hover:shadow-soft transition-all duration-300 w-full sm:w-auto"
@@ -630,7 +638,7 @@ export default function MatchDetailClient({
                             )}
                         </div>
 
-                        {editingRule && isLoggedIn ? (
+                        {editingRule && isAdmin ? (
                             <div>
                                 <textarea
                                     value={ruleContent}
