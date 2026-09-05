@@ -63,7 +63,7 @@ export default function AccountSettings({ user }: { user: { email: string; usern
   };
 
   const handleDeactivate = async () => {
-    if (!window.confirm('确定要注销账号吗？注销后该账号将无法登录，历史数据会保留。')) return;
+    if (!window.confirm('确定要注销账号吗？')) return;
     setDeactivating(true);
     setDeactMsg(null);
     try {
@@ -81,7 +81,7 @@ export default function AccountSettings({ user }: { user: { email: string; usern
   };
 
   const inputCls =
-    'w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all outline-none';
+    'w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all outline-none text-black placeholder-gray-400';
   const labelCls = 'block text-sm font-medium text-gray-700 mb-2';
 
   return (
@@ -180,7 +180,7 @@ export default function AccountSettings({ user }: { user: { email: string; usern
       {/* 注销账号 */}
       <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border-2 border-red-100">
         <h3 className="text-lg font-semibold text-red-600 mb-2">注销账号</h3>
-        <p className="text-sm text-gray-500 mb-4">注销后该账号将无法登录，历史数据会保留。</p>
+        <p className="text-sm text-gray-500 mb-4">注销后该账号将无法登录。</p>
         {deactMsg && (
           <div className="p-3 rounded-xl mb-4 text-sm border bg-red-50 text-red-600 border-red-100">{deactMsg}</div>
         )}
