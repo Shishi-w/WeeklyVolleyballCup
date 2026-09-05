@@ -51,21 +51,18 @@ type Theme = {
     id: string;
     content: string;
     edited_by_username: string | null;
-    updated_at: string;
 };
 
 type Rule = {
     id: string;
     content: string;
     edited_by_username: string | null;
-    updated_at: string;
 };
 
 type Result = {
     id: string;
     content: string;
     edited_by_username: string | null;
-    updated_at: string;
 };
 
 type Record = {
@@ -1006,6 +1003,7 @@ export default function MatchDetailClient({
                                                 <p className="text-gray-700 text-xs sm:text-sm leading-relaxed">{record.caption}</p>
                                                 <p className="text-xs text-gray-500 mt-1.5 sm:mt-2">
                                                     上传于 {new Date(record.created_at).toLocaleString('zh-CN')}
+                                                    {record.edited_by_username} · {new Date(record.created_at).toLocaleString('zh-CN')}
                                                 </p>
                                             </div>
                                         )}
@@ -1017,6 +1015,9 @@ export default function MatchDetailClient({
                                                 >
                                                      添加说明
                                                 </button>
+                                                 <p className="text-xs text-gray-500 mt-1.5 sm:mt-2">
+                                                    {record.edited_by_username} · {new Date(record.created_at).toLocaleString('zh-CN')}
+                                                </p>
                                             </div>
                                         )}
 
