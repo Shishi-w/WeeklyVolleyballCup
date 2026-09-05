@@ -101,13 +101,13 @@ export async function updateUsername(newUsername: string): Promise<AuthResult> {
       await client.query(
         `UPDATE teams SET players = (
            SELECT jsonb_agg(
-             CASE WHEN (p.value->>'user_id') = $1
-                  THEN p.value || jsonb_build_object('name', $2)
+             CASE WHEN (p.value->>'user_id') = $1::text
+                  THEN p.value || jsonb_build_object('name', $2::text)
                   ELSE p.value END
            )
            FROM jsonb_array_elements(teams.players) p
          )
-         WHERE players @> jsonb_build_array(jsonb_build_object('user_id', $1))`,
+         WHERE players @> jsonb_build_array(jsonb_build_object('user_id', $1::text))`,
         [user.id, trimmed]
       );
       // edited_by 列存邮箱，edited_by_username 存用户名
