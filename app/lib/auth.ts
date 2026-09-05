@@ -74,16 +74,32 @@ export async function requireUser(): Promise<SessionUser> {
   if (!user) {
     throw new Error('请先登录');
   }
-  return user;
+  // 令牌只证明“登录过”；是否仍有效需查库，停用/删除后即使 JWT 未过期也不能继续操作
+  const { rows } = await db.query(
+    'SELECT email, username, role, deactivated_at FROM users WHERE id = $1',
+    [user.id]
+  );
+  const row = rows[0];
+  if (!row) {
+    throw new Error('账号不存在');
+  }
+  if (row.deactivated_at) {
+    throw new Error('该账号已停用');
+  }
+  return {
+    id: user.id,
+    email: row.email,
+    username: row.username,
+    role: row.role === 'admin' ? 'admin' : 'user',
+  };
 }
 
 export async function requireAdmin(): Promise<SessionUser> {
-  const user = await requireUser();
-  const { rows } = await db.query('SELECT role FROM users WHERE id = $1', [user.id]);
-  if (rows[0]?.role !== 'admin') {
+  const user = await requireUser(); // 已从库里取到最新 role
+  if (user.role !== 'admin') {
     throw new Error('无权限操作');
   }
-  return { ...user, role: 'admin' };
+  return user;
 }
 
 export function hashPassword(password: string): string {

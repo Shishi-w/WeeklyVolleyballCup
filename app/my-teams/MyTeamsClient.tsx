@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { VolleyballIcon, UsersIcon, CalendarIcon } from '@/components/Icons';
+import AccountSettings from './AccountSettings';
 
 type Team = {
   id: string;
@@ -39,10 +40,12 @@ type Achievement = {
 };
 
 export default function MyTeamsClient({
+  user,
   initialTeams,
   initialMatchResults,
   initialAchievements,
 }: {
+  user: { email: string; username: string | null };
   initialTeams: Team[];
   initialMatchResults: MatchResult[];
   initialAchievements: Achievement[];
@@ -50,7 +53,7 @@ export default function MyTeamsClient({
   const teams = initialTeams;
   const matchResults = initialMatchResults;
   const achievements = initialAchievements;
-  const [activeTab, setActiveTab] = useState<'teams' | 'matches' | 'achievements'>('teams');
+  const [activeTab, setActiveTab] = useState<'teams' | 'matches' | 'achievements' | 'account'>('teams');
 
   const getAchievementIcon = (type: string) => {
     switch (type) {
@@ -105,10 +108,10 @@ export default function MyTeamsClient({
             </div>
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-4">
-            我的队伍
+            个人中心
           </h1>
           <p className="text-xl text-gray-600">
-            查看我的队伍、比赛记录和荣誉成就
+            管理我的账号，查看我的队伍、比赛记录和荣誉成就
           </p>
         </div>
 
@@ -148,6 +151,20 @@ export default function MyTeamsClient({
               >
 
                 荣誉成就 ({achievements.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('account')}
+                className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                  activeTab === 'account'
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'text-gray-600 hover:bg-white/50'
+                }`}
+              >
+                <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                账号设置
               </button>
             </div>
           </div>
@@ -320,6 +337,9 @@ export default function MyTeamsClient({
               )}
             </div>
           )}
+
+          {/* 账号设置 */}
+          {activeTab === 'account' && <AccountSettings user={user} />}
         </div>
       </div>
     </div>

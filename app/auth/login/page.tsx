@@ -8,6 +8,7 @@ function LoginForm() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
+    const [notice, setNotice] = useState('')
     const [loading, setLoading] = useState(false)
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -18,6 +19,8 @@ function LoginForm() {
         if (callbackUrlParam && callbackUrlParam.startsWith('/')) {
             setCallbackUrl(callbackUrlParam)
         }
+        const msg = searchParams.get('msg')
+        if (msg) setNotice(msg)
     }, [searchParams])
 
     const handleLogin = async () => {
@@ -53,6 +56,12 @@ function LoginForm() {
                     <p className="text-gray-500 text-sm mt-2">使用邮箱登录</p>
                 </div>
                 
+                {notice && (
+                    <div className="bg-green-50 text-green-600 p-3 rounded-xl mb-4 text-sm border border-green-100">
+                        {notice}
+                    </div>
+                )}
+
                 {error && (
                     <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm border border-red-100">
                         {error}

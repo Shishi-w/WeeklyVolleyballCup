@@ -64,6 +64,7 @@ export default async function MyTeamsPage() {
 
   return (
     <MyTeamsClient
+      user={{ email: user.email, username: user.username }}
       initialTeams={teams}
       initialMatchResults={matchResults}
       initialAchievements={achievements}
